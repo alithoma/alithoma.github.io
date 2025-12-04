@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>micro:bit Web-BLE Controller</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none; /* prevent copy menu when long press */
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header img {
+      width: 300px;
+    }
+
+    #controls, #servoControls {
+      display: grid;
+      gap: 12px;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    /* Direction Grid */
+    #controls {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .btn {
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #e0e0e0;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn:active {
+      background: #c0c0c0;
+    }
+
+    .btn:disabled {
+      background: #f1f1f1;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    #connectBtn {
+      background: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
+
+    #connectBtn.connected {
+      background: #f44336;
+    }
+
+    /* Servo grid */
+    #servoControls {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .status {
+      padding: 10px;
+      font-size: 14px;
+      width: 100%;
+      border-radius: 8px;
+    }
+    .connected { background: #d4edda; color: #155724; }
+    .disconnected { background: #f8d7da; color: #721c24; }
+    .scanning { background: #cce7ff; color: #004085; }
+
+    /* Debug */
+    .debug {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 5px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      width: 100%;
+      max-height: 120px;
+      overflow-y: auto;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="header">
+      <img src="logoRE.png" alt="Logo">
+      <p>micro:bit Web-BLE Controller</p>
+    </div>
+
+    <button id="connectBtn" class="btn">Connect</button>
+    <div id="status" class="status disconnected">Not Connected - Click 'Connect Button' to connect</div>
+
+    <!-- Direction Button -->
+    <div id="controls">
+      <div></div>
+      <button class="btn ctrl" data-press="a" data-release="e">Go</button>
+      <div></div>
+
+      <button class="btn ctrl" data-press="b" data-release="e">Left</button>
+      <div></div>
+      <button class="btn ctrl" data-press="c" data-release="e">Right</button>
+
+      <div></div>
+      <button class="btn ctrl" data-press="d" data-release="e">Back</button>
+      <div></div>
+    </div>
+
+    <!-- Servo Button -->
+    <p style="margin-top: 10px; font-weight:bold;">Servo Motor</p>
+
+    <div id="servoControls">
+      <button class="btn servo" data-press="f" data-release="h">Servo 1a</button>
+      <button class="btn servo" data-press="i" data-release="k">Servo 2a</button>
+      <button class="btn servo" data-press="g" data-release="h">Servo 1b</button>
+      <button class="btn servo" data-press="j" data-release="k">Servo 2b</button>
+    </div>
+
+    <div class="debug"><div id="debugLog"></div></div>
+
+  </div>
+
+<script>
+  const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+  const UART_TX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+  const UART_RX_CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+  let device, rx, tx;
+  let isConnected = false;
+  let queue = Promise.resolve();
+
+  function q(op){ queue = queue.then(op).catch(()=>{}); return queue; }
+
+  function debug(msg){
+    const log = document.getElementById("debugLog");
+    const t = new Date().toLocaleTimeString();
+    log.innerHTML += `[${t}] ${msg}<br>`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function connect() {
+    try {
+      updateStatus("scanning");
+      debug("Scanning…");
+
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{namePrefix:"micro:bit"},{namePrefix:"BBC micro:bit"}],
+        optionalServices:[UART_SERVICE_UUID]
+      });
+
+      device.addEventListener("gattserverdisconnected", disconnected);
+
+      debug("Connecting…");
+      const server = await device.gatt.connect();
+
+      const service = await server.getPrimaryService(UART_SERVICE_UUID);
+      rx = await service.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
+      tx = await service.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
+      await tx.startNotifications();
+      tx.addEventListener("characteristicvaluechanged", evt => {
+        debug("RX: " + new TextDecoder().decode(evt.target.value));
+      });
+
+      isConnected = true;
+      enableButtons(true);
+      updateStatus("connected");
+      debug("Connected");
+    } catch (err) {
+      debug("ERROR: " + err.message);
+      updateStatus("disconnected");
+    }
+  }
+
+  function disconnected(){
+    debug("Disconnected");
+    isConnected=false;
+    enableButtons(false);
+    updateStatus("disconnected");
+  }
+
+  function updateStatus(s){
+    const st = document.getElementById("status");
+    const btn = document.getElementById("connectBtn");
+
+    if(s==="connected"){
+      st.className="status connected";
+      st.innerText="Connected to micro:bit";
+      btn.innerText="Disconnect";
+      btn.classList.add("connected");
+    } 
+    else if(s==="scanning"){
+      st.className="status scanning";
+      st.innerText="Scanning…";
+    }
+    else {
+      st.className="status disconnected";
+      st.innerText="Not Connected - Click 'Connect Button' to connect";
+      btn.innerText="Connect";
+      btn.classList.remove("connected");
+    }
+  }
+
+  function enableButtons(state){
+    document.querySelectorAll(".ctrl, .servo").forEach(b => b.disabled = !state);
+  }
+
+  async function sendUART(char){
+    if(!isConnected || !rx) return;
+    const data = new TextEncoder().encode(char + "#");
+    await q(()=> rx.writeValue(data));
+  }
+
+  document.getElementById("connectBtn").onclick = ()=>{
+    if(isConnected){ device.gatt.disconnect(); }
+    else connect();
+  };
+
+  /* --- Direction Button --- */
+  document.querySelectorAll(".ctrl").forEach(btn=>{
+    let sentPress = false;
+    let sentRelease = false;
+
+    btn.addEventListener("pointerdown", ()=>{
+      if(!sentPress){ sendUART(btn.dataset.press); sentPress=true; sentRelease=false; }
+    });
+
+    btn.addEventListener("pointerup", ()=>{
+      if(!sentRelease){ sendUART(btn.dataset.release); sentRelease=true; sentPress=false; }
+    });
+
+    btn.addEventListener("pointerleave", ()=>{
+      if(sentPress && !sentRelease){
+        sendUART(btn.dataset.release);
+        sentRelease=true; sentPress=false;
+      }
+    });
+  });
+
+  /* --- Servo Button --- */
+  document.querySelectorAll(".servo").forEach(btn=>{
+    let sentPress = false;
+    let sentRelease = false;
+
+    btn.addEventListener("pointerdown", ()=>{
+      if(!sentPress){ sendUART(btn.dataset.press); sentPress=true; sentRelease=false; }
+    });
+
+    btn.addEventListener("pointerup", ()=>{
+      if(!sentRelease){ sendUART(btn.dataset.release); sentRelease=true; sentPress=false; }
+    });
+
+    btn.addEventListener("pointerleave", ()=>{
+      if(sentPress && !sentRelease){
+        sendUART(btn.dataset.release); 
+        sentRelease=true; sentPress=false;
+      }
+    });
+  });
+
+  enableButtons(false);
+</script>
+
+</body>
+</html>

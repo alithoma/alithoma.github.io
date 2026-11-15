@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xpert Academy - Presensi & Materi Pembelajaran</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-tr from-blue-600 to-cyan-400 p-2 rounded-xl shadow-lg shadow-blue-500/30">
+                        <i data-lucide="cpu" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="font-heading font-extrabold text-lg tracking-tight text-white block leading-none">XPERT ACADEMY</span>
+                        <span class="text-[11px] font-medium text-cyan-400 tracking-wider uppercase">Coding • Robotics • STEAM</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex space-x-2">
+                    <button onclick="switchTab('form')" id="nav-form" class="tab-btn bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i data-lucide="clipboard-check" class="w-4 h-4"></i> Input Presensi
+                    </button>
+                    <button onclick="switchTab('history')" id="nav-history" class="tab-btn text-slate-300 hover:bg-slate-800 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i data-lucide="history" class="w-4 h-4"></i> Riwayat Sesi
+                    </button>
+                    <button onclick="switchTab('setup')" id="nav-setup" class="tab-btn text-slate-300 hover:bg-slate-800 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i data-lucide="sheet" class="w-4 h-4"></i> Koneksi Google Sheet
+                    </button>
+                </nav>
+
+                <!-- Connection Status Badge -->
+                <div class="flex items-center gap-2">
+                    <div id="connection-badge" onclick="switchTab('setup')" class="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span class="hidden sm:inline">Mode Demo (Belum Terhubung)</span>
+                        <span class="sm:hidden">Demo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Nav -->
+        <div class="md:hidden border-t border-slate-800 grid grid-cols-3 bg-slate-900">
+            <button onclick="switchTab('form')" id="mob-nav-form" class="mob-tab-btn py-2.5 text-xs font-semibold text-blue-400 flex flex-col items-center gap-1 border-b-2 border-blue-500">
+                <i data-lucide="clipboard-check" class="w-4 h-4"></i> Presensi
+            </button>
+            <button onclick="switchTab('history')" id="mob-nav-history" class="mob-tab-btn py-2.5 text-xs font-semibold text-slate-400 flex flex-col items-center gap-1">
+                <i data-lucide="history" class="w-4 h-4"></i> Riwayat
+            </button>
+            <button onclick="switchTab('setup')" id="mob-nav-setup" class="mob-tab-btn py-2.5 text-xs font-semibold text-slate-400 flex flex-col items-center gap-1">
+                <i data-lucide="sheet" class="w-4 h-4"></i> Google Sheet
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- Toast Notification Container -->
+        <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+        <!-- TAB 1: FORM INPUT PRESENSI & MATERI -->
+        <section id="tab-form" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Form Presensi & Jurnal Mengajar</h1>
+                    <p class="text-sm text-slate-500 mt-1">Pilih siswa yang hadir dan catat materi pembelajaran hari ini.</p>
+                </div>
+                <button onclick="fetchStudentsFromSheet()" id="btn-sync-students" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold shadow-sm transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-600"></i>
+                    <span>Sinkronkan Daftar Siswa</span>
+                </button>
+            </div>
+
+            <form id="attendance-form" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Kolom Kiri: Detail Kelas & Materi (7 cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Card Informasi Sesi -->
+                    <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-100">
+                            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-slate-800">Informasi Sesi Kelas</h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Tanggal Pertemuan *</label>
+                                <input type="date" id="session-date" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Nama Mentor / Pengajar *</label>
+                                <input type="text" id="mentor-name" placeholder="Contoh: Kak Budi" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Materi Pembelajaran -->
+                    <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-100">
+                            <div class="p-2 bg-cyan-50 text-cyan-600 rounded-lg">
+                                <i data-lucide="book-open" class="w-5 h-5"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-slate-800">Materi yang Diajarkan</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Judul Modul / Topik Hari Ini *</label>
+                                <input type="text" id="material-title" placeholder="Contoh: Membuat Game Labirin dengan Variabel & Looping" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Detail Aktivitas & Project Siswa *</label>
+                                <textarea id="material-desc" rows="4" placeholder="Jelaskan konsep yang dipelajari, komponen sensor/blok kode yang digunakan, dan hasil project siswa..." required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Catatan Evaluasi / PR (Opsional)</label>
+                                <input type="text" id="material-notes" placeholder="Catatan perkembangan siswa atau persiapan pertemuan berikutnya..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Pemilihan Siswa (5 cols) -->
+                <div class="lg:col-span-5 flex flex-col">
+                    <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm flex-grow flex flex-col">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2.5">
+                                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                                    <i data-lucide="users" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-800 leading-tight">Daftar Siswa</h2>
+                                    <p class="text-xs text-slate-500">Data diambil dari master sheet admin</p>
+                                </div>
+                            </div>
+                            <span id="selected-count-badge" class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                0 Dipilih
+                            </span>
+                        </div>
+
+                        <!-- Search & Quick Actions -->
+                        <div class="space-y-3 mb-4">
+                            <div class="relative">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                                <input type="text" id="student-search" onkeyup="renderStudentList()" placeholder="Cari nama atau ID siswa..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <button type="button" onclick="toggleSelectAllVisible(true)" class="text-blue-600 hover:text-blue-800 font-semibold">Pilih Semua Tampil</button>
+                                <button type="button" onclick="toggleSelectAllVisible(false)" class="text-slate-500 hover:text-slate-700 font-medium">Batal Pilih Semua</button>
+                            </div>
+                        </div>
+
+                        <!-- Scrollable Student List -->
+                        <div id="student-list-container" class="flex-grow overflow-y-auto max-h-[380px] space-y-2 pr-1 custom-scrollbar">
+                            <!-- Student items injected by JS -->
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <button type="submit" id="btn-submit" class="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                                <span>Simpan Presensi ke Google Sheet</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </section>
+
+        <!-- TAB 2: RIWAYAT SESI -->
+        <section id="tab-history" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Riwayat Presensi & Materi</h1>
+                    <p class="text-sm text-slate-500 mt-1">Catatan sesi yang telah diinput pada perangkat ini atau tersinkron dari Google Sheet.</p>
+                </div>
+                <button onclick="fetchHistoryFromSheet()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold shadow-sm transition">
+                    <i data-lucide="download-cloud" class="w-4 h-4 text-blue-600"></i>
+                    <span>Muat dari Google Sheet</span>
+                </button>
+            </div>
+
+            <div class="glass-card rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">Tanggal</th>
+                                <th class="py-3.5 px-4">Mentor</th>
+                                <th class="py-3.5 px-4">Siswa Hadir</th>
+                                <th class="py-3.5 px-4">Materi Diajarkan</th>
+                                <th class="py-3.5 px-4 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-history" class="py-12 text-center hidden">
+                    <div class="inline-flex p-3 bg-slate-100 rounded-full text-slate-400 mb-3">
+                        <i data-lucide="folder-open" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-slate-600 font-medium">Belum ada riwayat presensi tercatat.</p>
+                    <p class="text-xs text-slate-400 mt-1">Silakan isi form presensi terlebih dahulu.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SETUP GOOGLE SHEET -->
+        <section id="tab-setup" class="hidden space-y-6">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Integrasi Google Sheets</h1>
+                <p class="text-sm text-slate-500 mt-1">Hubungkan aplikasi ini langsung dengan spreadsheet Xpert Academy Anda secara gratis tanpa pihak ketiga.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Form URL Webhook -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-card rounded-2xl p-6 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                            <i data-lucide="link" class="w-5 h-5 text-blue-600"></i>
+                            URL Web App Google Apps Script
+                        </h2>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+                            Tempelkan URL deployment dari Google Apps Script Anda di bawah ini agar data siswa otomatis terbaca dan presensi langsung masuk ke Google Sheet.
+                        </p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Google Script Web App URL</label>
+                                <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button type="button" onclick="saveGasUrl()" class="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-sm">
+                                    Simpan & Tes Koneksi
+                                </button>
+                                <button type="button" onclick="resetGasUrl()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-sm transition">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+                            <h3 class="text-xs font-bold text-blue-900 uppercase tracking-wider">Struktur Tab di Google Sheet Anda:</h3>
+                            <ul class="text-xs text-blue-800 space-y-1.5 list-disc pl-4">
+                                <li>Tab 1 bernama <strong>Data_Siswa</strong> (Diisi Admin): Kolom A = <code class="bg-white px-1 rounded">ID Siswa</code>, Kolom B = <code class="bg-white px-1 rounded">Nama Siswa</code>.</li>
+                                <li>Tab 2 bernama <strong>Log_Presensi</strong> (Terisi Otomatis oleh Web App ini).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kode Apps Script untuk di-copy -->
+                <div class="lg:col-span-7">
+                    <div class="glass-card rounded-2xl p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800">Panduan & Kode Google Apps Script</h2>
+                                <p class="text-xs text-slate-500">Salin kode ini ke menu <strong>Extensions > Apps Script</strong> di Google Sheet Anda.</p>
+                            </div>
+                            <button onclick="copyAppsScript()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>Salin Kode</span>
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs font-mono leading-relaxed max-h-[340px] custom-scrollbar">
+<pre id="apps-script-code">// KODE GOOGLE APPS SCRIPT UNTUK XPERT ACADEMY
+// 1. Buat Google Sheet dengan 2 tab: "Data_Siswa" dan "Log_Presensi"
+// 2. Di tab "Data_Siswa", buat header baris 1: ID_Siswa | Nama_Siswa
+// 3. Klik Extensions > Apps Script, tempel kode ini, lalu klik Deploy > New Deployment > Web App
+// 4. Set "Execute as: Me" dan "Who has access: Anyone", lalu salin URL Web App-nya.
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const action = e.parameter.action || 'getStudents';
+  
+  if (action === 'getStudents') {
+    const sheet = ss.getSheetByName('Data_Siswa');
+    if (!sheet) return responseJSON({ status: 'error', message: 'Tab Data_Siswa tidak ditemukan' });
+    
+    const data = sheet.getDataRange().getValues();
+    const students = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1]) { // Pastikan nama tidak kosong
+        students.push({
+          id: data[i][0] || 'XA-' + i,
+          name: data[i][1]
+        });
+      }
+    }
+    return responseJSON({ status: 'success', data: students });
+  }
+  
+  if (action === 'getHistory') {
+    const sheet = ss.getSheetByName('Log_Presensi');
+    if (!sheet) return responseJSON({ status: 'success', data: [] });
+    const data = sheet.getDataRange().getValues();
+    const history = [];
+    for (let i = data.length - 1; i >= 1 && history.length < 30; i--) {
+      history.push({
+        timestamp: data[i][0],
+        date: data[i][1],
+        mentor: data[i][2],
+        students: data[i][3],
+        materialTitle: data[i][5],
+        materialDesc: data[i][6],
+        notes: data[i][7]
+      });
+    }
+    return responseJSON({ status: 'success', data: history });
+  }
+}
+
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('Log_Presensi');
+    
+    // Buat tab Log_Presensi otomatis jika belum ada
+    if (!sheet) {
+      sheet = ss.insertSheet('Log_Presensi');
+      sheet.appendRow([
+        'Waktu Input', 'Tanggal Kelas', 'Mentor', 
+        'Siswa Hadir', 'Jumlah Hadir', 'Judul Materi', 'Detail Materi', 'Catatan'
+      ]);
+      sheet.getRange(1, 1, 1, 8).setFontWeight('bold').setBackground('#e2e8f0');
+    }
+    
+    const payload = JSON.parse(e.postData.contents);
+    const studentNames = payload.students.map(s => s.name + ' (' + s.id + ')').join(', ');
+    
+    sheet.appendRow([
+      new Date(),
+      payload.date,
+      payload.mentor,
+      studentNames,
+      payload.students.length,
+      payload.materialTitle,
+      payload.materialDesc,
+      payload.notes || '-'
+    ]);
+    
+    return responseJSON({ status: 'success', message: 'Presensi berhasil disimpan ke Google Sheet!' });
+  } catch (err) {
+    return responseJSON({ status: 'error', message: err.toString() });
+  }
+}
+
+function responseJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <p>&copy; 2026 Xpert Academy (Coding, Robotics & STEAM). Sistem Presensi Terintegrasi.</p>
+            <p>Admin mengelola master data siswa langsung melalui Google Sheets.</p>
+        </div>
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // ==========================================
+        // 1. STATE & MOCK DATA (FALLBACK DEMO)
+        // ==========================================
+        const DEFAULT_DEMO_STUDENTS = [
+            { id: 'XA-101', name: 'Alvaro Pratama' },
+            { id: 'XA-102', name: 'Beatrice Wijaya' },
+            { id: 'XA-103', name: 'Caleb Tan' },
+            { id: 'XA-104', name: 'Daffa Ramadhan' },
+            { id: 'XA-105', name: 'Elena Putri' },
+            { id: 'XA-106', name: 'Farhan Hakim' },
+            { id: 'XA-107', name: 'Giselle Lim' },
+            { id: 'XA-108', name: 'Hafiz Maulana' },
+            { id: 'XA-109', name: 'Icha Permata' },
+            { id: 'XA-110', name: 'Jason Christian' }
+        ];
+
+        let state = {
+            gasUrl: '',
+            students: [...DEFAULT_DEMO_STUDENTS],
+            selectedStudentIds: new Set(),
+            history: []
+        };
+
+        // ==========================================
+        // 2. INITIALIZATION
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('session-date').value = today;
+
+            // Load saved GAS URL if exists in memory/URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const scriptParam = urlParams.get('scriptUrl');
+            if (scriptParam) {
+                state.gasUrl = scriptParam;
+                document.getElementById('gas-url-input').value = scriptParam;
+                updateConnectionBadge(true);
+                fetchStudentsFromSheet();
+            } else {
+                renderStudentList();
+                renderHistoryTable();
+            }
+        });
+
+        // ==========================================
+        // 3. NAVIGATION TABS
+        // ==========================================
+        function switchTab(tabName) {
+            ['form', 'history', 'setup'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                
+                // Desktop nav styles
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    navBtn.className = 'tab-btn bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2';
+                } else {
+                    navBtn.className = 'tab-btn text-slate-300 hover:bg-slate-800 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2';
+                }
+
+                // Mobile nav styles
+                const mobBtn = document.getElementById(`mob-nav-${t}`);
+                if (t === tabName) {
+                    mobBtn.className = 'mob-tab-btn py-2.5 text-xs font-semibold text-blue-400 flex flex-col items-center gap-1 border-b-2 border-blue-500';
+                } else {
+                    mobBtn.className = 'mob-tab-btn py-2.5 text-xs font-semibold text-slate-400 flex flex-col items-center gap-1';
+                }
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 4. STUDENT LIST RENDERING & SELECTION
+        // ==========================================
+        function getFilteredStudents() {
+            const searchQuery = document.getElementById('student-search').value.toLowerCase().trim();
+
+            return state.students.filter(student => {
+                return student.name.toLowerCase().includes(searchQuery) || 
+                       student.id.toLowerCase().includes(searchQuery);
+            });
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('student-list-container');
+            const filtered = getFilteredStudents();
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p class="text-sm font-medium text-slate-600">Tidak ada siswa ditemukan</p>
+                        <p class="text-xs text-slate-400 mt-1">Coba ubah kata kunci pencarian.</p>
+                    </div>
+                `;
+                updateSelectedBadge();
+                return;
+            }
+
+            container.innerHTML = filtered.map(student => {
+                const isSelected = state.selectedStudentIds.has(student.id);
+
+                return `
+                    <div onclick="toggleStudentSelection('${student.id}')" 
+                         class="cursor-pointer p-3 rounded-xl border transition flex items-center justify-between select-none ${
+                             isSelected 
+                             ? 'bg-blue-50/80 border-blue-500 shadow-sm' 
+                             : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                         }">
+                        <div class="flex items-center gap-3">
+                            <div class="w-5 h-5 rounded-md flex items-center justify-center border transition ${
+                                isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'
+                            }">
+                                ${isSelected ? '<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>' : ''}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-800 leading-tight">${student.name}</p>
+                                <span class="text-[11px] font-mono text-slate-500 mt-0.5 block">${student.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+            updateSelectedBadge();
+        }
+
+        function toggleStudentSelection(id) {
+            if (state.selectedStudentIds.has(id)) {
+                state.selectedStudentIds.delete(id);
+            } else {
+                state.selectedStudentIds.add(id);
+            }
+            renderStudentList();
+        }
+
+        function toggleSelectAllVisible(selectAll) {
+            const visibleStudents = getFilteredStudents();
+            visibleStudents.forEach(s => {
+                if (selectAll) {
+                    state.selectedStudentIds.add(s.id);
+                } else {
+                    state.selectedStudentIds.delete(s.id);
+                }
+            });
+            renderStudentList();
+        }
+
+        function updateSelectedBadge() {
+            const badge = document.getElementById('selected-count-badge');
+            const count = state.selectedStudentIds.size;
+            badge.textContent = `${count} Dipilih`;
+            if (count > 0) {
+                badge.className = 'px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm';
+            } else {
+                badge.className = 'px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full';
+            }
+        }
+
+        // ==========================================
+        // 5. GOOGLE SHEETS INTEGRATION (FETCH & POST)
+        // ==========================================
+        function saveGasUrl() {
+            const inputVal = document.getElementById('gas-url-input').value.trim();
+            if (!inputVal || !inputVal.startsWith('https://script.google.com/')) {
+                showToast('Masukkan URL Google Apps Script yang valid (dimulai dengan https://script.google.com/...)', 'error');
+                return;
+            }
+            state.gasUrl = inputVal;
+            updateConnectionBadge(true);
+            showToast('URL disimpan! Mencoba mengambil data siswa dari Google Sheet...', 'info');
+            fetchStudentsFromSheet();
+        }
+
+        function resetGasUrl() {
+            state.gasUrl = '';
+            document.getElementById('gas-url-input').value = '';
+            state.students = [...DEFAULT_DEMO_STUDENTS];
+            state.selectedStudentIds.clear();
+            updateConnectionBadge(false);
+            renderStudentList();
+            showToast('Koneksi direset kembali ke Mode Demo.', 'info');
+        }
+
+        function updateConnectionBadge(isConnected) {
+            const badge = document.getElementById('connection-badge');
+            if (isConnected) {
+                badge.className = 'cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition';
+                badge.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="hidden sm:inline">Terhubung Google Sheet</span>
+                    <span class="sm:hidden">Online</span>
+                `;
+            } else {
+                badge.className = 'cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition';
+                badge.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="hidden sm:inline">Mode Demo (Belum Terhubung)</span>
+                    <span class="sm:hidden">Demo</span>
+                `;
+            }
+        }
+
+        async function fetchStudentsFromSheet() {
+            if (!state.gasUrl) {
+                showToast('Anda sedang dalam Mode Demo. Hubungkan URL Google Sheet di tab Koneksi terlebih dahulu.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btn-sync-students');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-600"></i><span>Menyinkronkan...</span>`;
+            lucide.createIcons();
+
+            try {
+                const response = await fetch(`${state.gasUrl}?action=getStudents`);
+                const result = await response.json();
+
+                if (result.status === 'success' && Array.isArray(result.data)) {
+                    state.students = result.data;
+                    state.selectedStudentIds.clear();
+                    renderStudentList();
+                    showToast(`Berhasil memuat ${result.data.length} siswa dari Google Sheet!`, 'success');
+                } else {
+                    throw new Error(result.message || 'Format data tidak sesuai');
+                }
+            } catch (error) {
+                console.error('Sync Error:', error);
+                showToast('Gagal mengambil data dari Google Sheet. Pastikan URL benar & akses diatur ke "Anyone".', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+                lucide.createIcons();
+            }
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            if (state.selectedStudentIds.size === 0) {
+                showToast('Pilih minimal 1 siswa yang hadir pada daftar di sebelah kanan!', 'error');
+                return;
+            }
+
+            const selectedStudents = state.students.filter(s => state.selectedStudentIds.has(s.id));
+            const payload = {
+                date: document.getElementById('session-date').value,
+                mentor: document.getElementById('mentor-name').value.trim(),
+                materialTitle: document.getElementById('material-title').value.trim(),
+                materialDesc: document.getElementById('material-desc').value.trim(),
+                notes: document.getElementById('material-notes').value.trim(),
+                students: selectedStudents
+            };
+
+            const submitBtn = document.getElementById('btn-submit');
+            const originalBtnHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Mengirim Data...</span>`;
+            lucide.createIcons();
+
+            // Jika terhubung ke Google Apps Script
+            if (state.gasUrl) {
+                try {
+                    // Menggunakan text/plain agar terhindar dari CORS preflight block oleh Google Apps Script
+                    const response = await fetch(state.gasUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        addRecordToLocalHistory(payload, 'Tersimpan di Google Sheet');
+                        resetFormAfterSubmit();
+                        showToast('Presensi & materi berhasil tersimpan ke Google Sheet!', 'success');
+                    } else {
+                        throw new Error(result.message || 'Gagal menyimpan');
+                    }
+                } catch (error) {
+                    console.error('Submit Error:', error);
+                    showToast('Gagal mengirim ke Google Sheet: ' + error.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHTML;
+                    lucide.createIcons();
+                }
+            } else {
+                // Simulasi Mode Demo
+                setTimeout(() => {
+                    addRecordToLocalHistory(payload, 'Simulasi Lokal (Demo)');
+                    resetFormAfterSubmit();
+                    showToast('Berhasil disimpan (Mode Demo). Hubungkan Google Sheet untuk menyimpan permanen.', 'success');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHTML;
+                    lucide.createIcons();
+                }, 600);
+            }
+        }
+
+        function resetFormAfterSubmit() {
+            document.getElementById('material-title').value = '';
+            document.getElementById('material-desc').value = '';
+            document.getElementById('material-notes').value = '';
+            state.selectedStudentIds.clear();
+            renderStudentList();
+        }
+
+        // ==========================================
+        // 6. HISTORY LOG MANAGEMENT
+        // ==========================================
+        function addRecordToLocalHistory(payload, syncStatus) {
+            state.history.unshift({
+                date: payload.date,
+                mentor: payload.mentor,
+                students: payload.students.map(s => s.name).join(', '),
+                studentCount: payload.students.length,
+                materialTitle: payload.materialTitle,
+                materialDesc: payload.materialDesc,
+                status: syncStatus
+            });
+            renderHistoryTable();
+        }
+
+        async function fetchHistoryFromSheet() {
+            if (!state.gasUrl) {
+                showToast('Hubungkan URL Google Sheet terlebih dahulu pada tab Koneksi.', 'warning');
+                return;
+            }
+            showToast('Mengambil riwayat terbaru dari Google Sheet...', 'info');
+            try {
+                const res = await fetch(`${state.gasUrl}?action=getHistory`);
+                const result = await res.json();
+                if (result.status === 'success' && Array.isArray(result.data)) {
+                    state.history = result.data.map(item => ({
+                        date: item.date ? item.date.toString().split('T')[0] : '-',
+                        mentor: item.mentor,
+                        students: item.students,
+                        materialTitle: item.materialTitle,
+                        materialDesc: item.materialDesc,
+                        status: 'Google Sheet'
+                    }));
+                    renderHistoryTable();
+                    showToast('Riwayat berhasil diperbarui dari Google Sheet!', 'success');
+                }
+            } catch (e) {
+                showToast('Gagal memuat riwayat dari Google Sheet.', 'error');
+            }
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('history-table-body');
+            const emptyState = document.getElementById('empty-history');
+
+            if (state.history.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = state.history.map(item => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3.5 px-4 whitespace-nowrap font-medium text-slate-700">${item.date}</td>
+                    <td class="py-3.5 px-4 font-medium text-slate-700">${item.mentor}</td>
+                    <td class="py-3.5 px-4 max-w-xs">
+                        <p class="text-xs text-slate-700 line-clamp-2" title="${item.students}">${item.students}</p>
+                    </td>
+                    <td class="py-3.5 px-4 max-w-xs">
+                        <p class="font-semibold text-slate-800 text-xs">${item.materialTitle}</p>
+                        <p class="text-xs text-slate-500 line-clamp-1">${item.materialDesc}</p>
+                    </td>
+                    <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            item.status.includes('Google Sheet') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                        }">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            ${item.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 7. UTILITIES (CLIPBOARD & TOASTS)
+        // ==========================================
+        function copyAppsScript() {
+            const codeText = document.getElementById('apps-script-code').innerText;
+            const textArea = document.createElement('textarea');
+            textArea.value = codeText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Kode Google Apps Script berhasil disalin ke clipboard!', 'success');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                success: 'bg-slate-900 text-white border-l-4 border-emerald-500',
+                error: 'bg-slate-900 text-white border-l-4 border-rose-500',
+                warning: 'bg-slate-900 text-white border-l-4 border-amber-500',
+                info: 'bg-slate-900 text-white border-l-4 border-blue-500'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'alert-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3.5 rounded-xl shadow-xl text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type] || 'info'}" class="w-5 h-5 shrink-0"></i>
+                <span class="leading-snug">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

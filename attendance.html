@@ -126,7 +126,6 @@
                     </label>
                     <input type="hidden" id="selectedStudentId" required>
                     <input type="hidden" id="selectedStudentName" required>
-                    <input type="hidden" id="selectedStudentProgram">
 
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
@@ -321,10 +320,10 @@ function doPost(e) {
       sheetPresensi = ss.insertSheet("Presensi");
       sheetPresensi.appendRow([
         "Timestamp", "Tanggal Pertemuan", "ID Siswa", 
-        "Nama Siswa", "Program Terdaftar", 
-        "Status Kehadiran", "Materi Diajarkan", "Nama Mentor"
+        "Nama Siswa", "Status Kehadiran", 
+        "Materi Diajarkan", "Nama Mentor"
       ]);
-      sheetPresensi.getRange("A1:H1").setFontWeight("bold").setBackground("#e0e7ff");
+      sheetPresensi.getRange("A1:G1").setFontWeight("bold").setBackground("#e0e7ff");
     }
     
     var payload = JSON.parse(e.postData.contents);
@@ -334,7 +333,6 @@ function doPost(e) {
       payload.tanggal,
       payload.studentId,
       payload.studentName,
-      payload.program,
       payload.status,
       payload.materi,
       payload.mentor
@@ -372,18 +370,7 @@ function doPost(e) {
          * Contoh: const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
          * ============================================================================
          */
-        const SCRIPT_URL = "https://script.google.com/macros/s/PASTE_YOUR_WEB_APP_URL_HERE/exec";
-
-        // Data Fallback / Simulasi jika SCRIPT_URL belum diganti dengan URL asli
-        const MOCK_STUDENTS = [
-            { id: "XA-001", nama: "Arka Pratama", program: "Coding (Scratch / Python / Web)" },
-            { id: "XA-002", nama: "Bintang Maharani", program: "Robotics (Lego / Arduino / Micro:bit)" },
-            { id: "XA-003", nama: "Candra Wijaya", program: "STEAM Exploration" },
-            { id: "XA-004", nama: "Dinda Kirana", program: "Game Development" },
-            { id: "XA-005", nama: "Erlangga Saputra", program: "Robotics (Lego / Arduino / Micro:bit)" },
-            { id: "XA-006", nama: "Fathia Azzahra", program: "Coding (Scratch / Python / Web)" },
-            { id: "XA-007", nama: "Gavin Alexander", program: "3D Design & Printing" },
-            { id: "XA-008", nama: "Hana Nabila", program: "Coding (Scratch / Python / Web)" }
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjhv-mzdHB2VexlEjX94yMbQXQ90RUJUJ0agrCK_zlUh5BHN6ZwBnysW1tFx8ngHB98A/exec";
         ];
 
         let studentsList = [];

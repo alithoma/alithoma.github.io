@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bel Cerdas Cermat Interlock - Real-Time P2P</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS untuk koneksi Real-Time WebRTC tanpa server backend -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- QRCode.js untuk generate QR Code Room -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Font Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.5s ease-in-out 2',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Mencegah double-tap zoom dan delay sentuhan pada layar HP peserta */
+        * {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* Efek tombol fisik 3D untuk Bel Peserta */
+        .buzzer-btn {
+            transition: transform 0.06s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.06s ease;
+        }
+        .buzzer-btn:active:not(:disabled) {
+            transform: translateY(12px) scale(0.97);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
+
+    <!-- ==================== NOTIFIKASI TOAST / BANNER ==================== -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+    <!-- ==================== HEADER GLOBAL ==================== -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <i class="fa-solid fa-bell text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-base sm:text-lg tracking-tight leading-none text-white">BEL CERDAS CERMAT</h1>
+                <p class="text-xs text-slate-400 font-medium mt-0.5">Sistem Interlock Real-Time P2P</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- Status Audio -->
+            <button id="btn-test-audio" onclick="initAudio(); playTone('ping');" title="Aktifkan/Tes Suara" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700">
+                <i class="fa-solid fa-volume-high text-amber-400"></i>
+                <span class="hidden sm:inline">Tes Suara</span>
+            </button>
+            <!-- Tombol Panduan GitHub & Jaringan Lokal -->
+            <button onclick="toggleModal('modal-guide', true)" class="px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-brands fa-github text-sm"></i>
+                <span>Panduan GitHub</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== VIEW 1: PILIH PERAN (LANDING) ==================== -->
+    <main id="view-landing" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 max-w-5xl mx-auto w-full">
+        <div class="text-center max-w-2xl mb-8 sm:mb-10">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                Tanpa Server Backend • Siap GitHub Pages
+            </span>
+            <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-3">
+                Sistem Bel Lomba <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Anti-Bentrok</span>
+            </h2>
+            <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                Hubungkan layar utama panitia dan perangkat HP/laptop setiap regu dalam satu jaringan Wi-Fi/LAN. Dilengkapi penguncian otomatis (interlock) akurat hingga milidetik.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+            <!-- Kartu Pilih Host / Panitia -->
+            <div class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-xl transition group">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-white mb-2">Host / Panitia</h3>
+                    <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                        Buka di laptop panitia atau sambungkan ke proyektor. Mengatur kunci bel, reset giliran, memantau selisih waktu tekan, dan mengelola papan skor.
+                    </p>
+                </div>
+                <button onclick="startAsHost()" id="btn-create-room" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-base shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 transition active:scale-98">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Buat Ruang Lomba (Host)</span>
+                </button>
+            </div>
+
+            <!-- Kartu Pilih Peserta / Regu -->
+            <div class="bg-slate-900 border border-slate-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-xl transition">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center text-2xl mb-5">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-white mb-2">Peserta / Regu</h3>
+                    <p class="text-slate-400 text-sm mb-5 leading-relaxed">
+                        Buka di HP, tablet, atau laptop masing-masing regu. Masukkan kode 4 digit dari layar panitia untuk bergabung.
+                    </p>
+
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Kode Ruang (4 Karakter)</label>
+                            <input type="text" id="input-room-code" maxlength="4" placeholder="Contoh: A7K9" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-white font-mono text-xl font-extrabold uppercase tracking-widest outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Nama Regu / Peserta</label>
+                            <input type="text" id="input-team-name" maxlength="20" placeholder="Contoh: Regu A / Garuda" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-white font-bold text-base outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pilih Warna Regu</label>
+                            <div class="grid grid-cols-5 gap-2" id="color-picker">
+                                <button type="button" data-color="rose" class="color-opt h-10 rounded-xl bg-rose-600 ring-2 ring-white ring-offset-2 ring-offset-slate-900 transition" title="Merah"></button>
+                                <button type="button" data-color="sky" class="color-opt h-10 rounded-xl bg-sky-600 opacity-70 hover:opacity-100 transition" title="Biru"></button>
+                                <button type="button" data-color="emerald" class="color-opt h-10 rounded-xl bg-emerald-600 opacity-70 hover:opacity-100 transition" title="Hijau"></button>
+                                <button type="button" data-color="amber" class="color-opt h-10 rounded-xl bg-amber-500 opacity-70 hover:opacity-100 transition" title="Kuning/Oranye"></button>
+                                <button type="button" data-color="purple" class="color-opt h-10 rounded-xl bg-purple-600 opacity-70 hover:opacity-100 transition" title="Ungu"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="joinAsParticipant()" id="btn-join-room" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-base shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition active:scale-98">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Gabung & Siapkan Bel</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== VIEW 2: DASHBOARD HOST / PANITIA ==================== -->
+    <main id="view-host" class="hidden flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6">
+        
+        <!-- Baris Atas: Info Room & Kontrol Utama Interlock -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Kartu Kode Room & QR Code (4 Kolom) -->
+            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Kode Ruang Lomba</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="host-room-code" class="font-mono text-4xl sm:text-5xl font-black tracking-widest text-amber-400">----</span>
+                            <button onclick="copyShareLink()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Salin Link Gabung Cepat">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        </div>
+                        <p id="host-connection-status" class="text-xs text-emerald-400 font-semibold mt-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Menunggu peserta bergabung...
+                        </p>
+                    </div>
+                    <!-- QR Code Container -->
+                    <div class="bg-white p-2 rounded-2xl shrink-0 shadow-md">
+                        <div id="qrcode-container" class="w-24 h-24 flex items-center justify-center"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Scan QR atau buka URL yang sama</span>
+                    <button onclick="leaveRoom()" class="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-power-off"></i> Tutup Ruang
+                    </button>
+                </div>
+            </div>
+
+            <!-- Layar Status Bel Utama & Kontrol Kunci (8 Kolom) -->
+            <div id="host-status-panel" class="lg:col-span-8 bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-2xl transition-colors duration-300 relative overflow-hidden">
+                
+                <!-- Indikator Status Besar (Untuk Proyektor) -->
+                <div class="flex flex-col items-center justify-center text-center my-auto py-4 z-10">
+                    <div id="host-status-badge" class="px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold uppercase tracking-widest mb-3">
+                        STATUS: SIAP MENERIMA BEL
+                    </div>
+                    <h2 id="host-winner-display" class="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white mb-2">
+                        BEL TERBUKA
+                    </h2>
+                    <p id="host-winner-sub" class="text-slate-400 text-sm sm:text-lg font-medium">
+                        Semua regu dapat menekan bel sekarang
+                    </p>
+                </div>
+
+                <!-- Tombol Kontrol Cepat Juri/Panitia -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800/80 z-10">
+                    <button onclick="hostResetBuzzer()" class="col-span-2 sm:col-span-2 py-4 px-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base sm:text-lg shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition active:scale-98">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>RESET / BUKA BEL</span>
+                    </button>
+                    
+                    <button id="btn-global-lock" onclick="hostToggleGlobalLock()" class="py-4 px-4 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>Kunci Semua</span>
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="triggerJudgeSound('correct')" class="py-3 px-2 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-md transition active:scale-95" title="Suara Jawaban Benar">
+                            <i class="fa-solid fa-check text-base"></i>
+                            <span>BENAR</span>
+                        </button>
+                        <button onclick="triggerJudgeSound('wrong')" class="py-3 px-2 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-md transition active:scale-95" title="Suara Jawaban Salah">
+                            <i class="fa-solid fa-xmark text-base"></i>
+                            <span>SALAH</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Baris Bawah: Papan Skor Regu & Log Urutan Tekan Milidetik -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+            
+            <!-- Papan Skor & Manajemen Peserta (8 Kolom) -->
+            <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 flex flex-col shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
+                        <h3 class="font-extrabold text-lg text-white">Papan Skor & Regu Terhubung</h3>
+                        <span id="participant-count-badge" class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">0 Regu</span>
+                    </div>
+                    <button onclick="resetAllScores()" class="text-xs text-slate-400 hover:text-rose-400 font-semibold transition">
+                        Reset Semua Skor
+                    </button>
+                </div>
+
+                <!-- Daftar Kartu Regu -->
+                <div id="host-teams-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500">
+                        <i class="fa-solid fa-users text-3xl mb-2 opacity-50"></i>
+                        <p class="font-semibold text-sm">Belum ada regu yang bergabung</p>
+                        <p class="text-xs mt-1">Bagikan kode ruang <span class="font-mono text-amber-400 font-bold" id="empty-room-hint">----</span> kepada peserta</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Urutan Waktu Tekan / Selisih Milidetik (4 Kolom) -->
+            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 flex flex-col shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-sky-400 text-lg"></i>
+                        <h3 class="font-extrabold text-lg text-white">Log Urutan Tekan</h3>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded-lg">Presisi ms</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-3">
+                    Menampilkan urutan regu yang menekan bel pada putaran saat ini beserta selisih waktunya:
+                </p>
+
+                <div id="host-press-log" class="flex-1 space-y-2.5 overflow-y-auto max-h-80 pr-1">
+                    <div class="text-center py-8 text-slate-600 text-xs italic">
+                        Belum ada bel yang ditekan pada sesi ini.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== VIEW 3: TAMPILAN PESERTA / REGU ==================== -->
+    <main id="view-participant" class="hidden flex-1 flex flex-col justify-between max-w-2xl mx-auto w-full p-4 sm:p-6">
+        
+        <!-- Header Info Regu & Skor -->
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-3">
+                <div id="p-team-badge" class="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center font-black text-xl text-white shadow-md">
+                    A
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 id="p-team-name" class="font-black text-lg sm:text-xl text-white leading-tight">Nama Regu</h2>
+                        <span id="p-conn-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400" title="Terhubung ke Host"></span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-mono">Room: <span id="p-room-code" class="text-amber-400 font-bold">----</span></p>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Skor Anda</span>
+                <span id="p-team-score" class="font-mono text-2xl sm:text-3xl font-black text-white">0</span>
+            </div>
+        </div>
+
+        <!-- Area Tombol Bel Raksasa (Memenuhi sebagian besar layar HP) -->
+        <div class="my-6 flex-1 flex flex-col items-center justify-center">
+            <button id="btn-mega-buzzer" class="buzzer-btn w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[2.5rem] bg-gradient-to-b from-emerald-400 to-emerald-600 border-b-[14px] border-emerald-800 shadow-[0_20px_50px_rgba(16,185,129,0.35)] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden cursor-pointer">
+                
+                <div id="buzzer-icon-wrap" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-inner">
+                    <i id="buzzer-icon" class="fa-solid fa-bell text-5xl sm:text-6xl text-white"></i>
+                </div>
+                
+                <span id="buzzer-main-text" class="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-md uppercase">
+                    TEKAN BEL!
+                </span>
+                
+                <span id="buzzer-sub-text" class="text-sm sm:text-base font-bold text-white/90 mt-2 max-w-xs">
+                    Sentuh area ini secepat mungkin saat siap menjawab
+                </span>
+            </button>
+        </div>
+
+        <!-- Footer Status Koneksi Peserta -->
+        <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/70 px-4 py-3 rounded-2xl border border-slate-800/80">
+            <span id="p-status-footer" class="flex items-center gap-2 font-medium">
+                <i class="fa-solid fa-wifi text-emerald-400"></i> Terhubung Real-Time
+            </span>
+            <button onclick="leaveRoom()" class="text-rose-400 hover:text-rose-300 font-bold">
+                Keluar Ruang
+            </button>
+        </div>
+    </main>
+
+    <!-- ==================== MODAL PANDUAN GITHUB & JARINGAN LOKAL ==================== -->
+    <div id="modal-guide" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl my-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">
+                        <i class="fa-brands fa-github"></i>
+                    </div>
+                    <h3 class="font-extrabold text-xl text-white">Panduan Upload GitHub & Jaringan Lokal</h3>
+                </div>
+                <button onclick="toggleModal('modal-guide', false)" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 my-5 text-sm text-slate-300 leading-relaxed max-h-[65vh] overflow-y-auto pr-2">
+                <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-1"></i> Cara Upload ke GitHub Pages (Gratis & Permanen)
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-400 text-xs sm:text-sm">
+                        <li>Buat repository baru di akun <strong>GitHub</strong> Anda (misal: <code class="text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded">bel-cerdas-cermat</code>).</li>
+                        <li>Upload file HTML ini dan pastikan namanya adalah <code class="text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded font-bold">index.html</code>.</li>
+                        <li>Buka menu <strong>Settings</strong> &rarr; <strong>Pages</strong> di repository GitHub Anda.</li>
+                        <li>Pada bagian <em>Branch</em>, pilih <code class="text-slate-200">main</code> lalu klik <strong>Save</strong>.</li>
+                        <li>Dalam 1 menit, aplikasi dapat diakses melalui <code class="text-sky-400">https://username.github.io/bel-cerdas-cermat/</code> dari HP/Laptop mana saja!</li>
+                    </ol>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                    <h4 class="font-bold text-emerald-400 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-2"></i> Cara Kerja di Jaringan Wi-Fi / LAN yang Sama
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-400">
+                        Aplikasi ini menggunakan teknologi <strong>WebRTC (Peer-to-Peer)</strong>. Setelah halaman dimuat dari GitHub Pages (atau dijalankan via Live Server lokal), data tekanan bel dikirim <strong>langsung antar perangkat</strong> melalui router Wi-Fi/LAN lokal dengan latensi sangat rendah (milidetik) tanpa melewati server database eksternal.
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                    <h4 class="font-bold text-sky-400 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-3"></i> Tips Saat Pelaksanaan Lomba
+                    </h4>
+                    <ul class="list-disc list-inside space-y-1 text-xs sm:text-sm text-slate-400">
+                        <li>Pastikan HP peserta tidak masuk mode <em>Sleep/Layar Mati</em> agar koneksi WebRTC tetap aktif.</li>
+                        <li>Gunakan mode <strong>Kunci Semua</strong> saat panitia membacakan soal rebutan, lalu klik <strong>Reset / Buka Bel</strong> setelah soal selesai dibacakan.</li>
+                        <li>Jika peserta terputus karena sinyal, peserta cukup menekan tombol <em>Gabung</em> ulang dengan Nama Regu yang sama.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 flex justify-end">
+                <button onclick="toggleModal('modal-guide', false)" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        /**
+         * =========================================================================
+         * 1. AUDIO SYNTHESIZER (WEB AUDIO API - TANPA FILE MP3 EKSTERNAL)
+         * =========================================================================
+         */
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(type) {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                if (type === 'buzzer') {
+                    // Suara Bel Cerdas Cermat Khas (Rich Dual-Oscillator Chime + Bell)
+                    const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    freqs.forEach((f, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+                        osc.frequency.setValueAtTime(f, now);
+
+                        gain.gain.setValueAtTime(0.001, now);
+                        gain.gain.exponentialRampToValueAtTime(0.25 / (idx + 1), now + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now);
+                        osc.stop(now + 1.25);
+                    });
+                } else if (type === 'correct') {
+                    // Suara Ding-Dong Benar
+                    [880, 1108.73].forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + i * 0.14);
+                        gain.gain.setValueAtTime(0.25, now + i * 0.14);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.6);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + i * 0.14);
+                        osc.stop(now + i * 0.14 + 0.65);
+                    });
+                } else if (type === 'wrong') {
+                    // Suara Tet-Tot Salah (Low Sawtooth Buzz)
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.45);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.52);
+                } else if (type === 'ping') {
+                    // Suara Tes / Reset
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(660, now);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                }
+            } catch (e) {
+                console.warn("Audio gagal diputar:", e);
+            }
+        }
+
+        /**
+         * =========================================================================
+         * 2. STATE APLIKASI & UTILITAS UI
+         * =========================================================================
+         */
+        const PEER_PREFIX = 'bcc-interlock-2026-';
+        let peer = null;
+        let role = null; // 'host' | 'participant'
+        let roomCode = '';
+        let selectedColor = 'rose';
+
+        // State khusus Host
+        let hostConnections = {}; // peerId -> DataConnection
+        let teams = {}; // teamId -> { id, peerId, name, color, score, connected }
+        let buzzerState = 'OPEN'; // 'OPEN' | 'LOCKED_BY_TEAM' | 'GLOBAL_LOCKED'
+        let lockedByTeam = null; // { id, name, color, timestamp }
+        let pressLog = []; // Array of { teamId, name, color, time, deltaMs }
+        let firstPressHostTime = null;
+
+        // State khusus Participant
+        let hostConn = null;
+        let myTeamId = localStorage.getItem('bcc_team_id') || ('team-' + Math.random().toString(36).substring(2, 9));
+        localStorage.setItem('bcc_team_id', myTeamId);
+        let myTeamName = '';
+        let myScore = 0;
+        let participantBuzzerStatus = 'OPEN'; // 'OPEN' | 'WINNER' | 'LOCKED_OTHER' | 'GLOBAL_LOCKED'
+        let reconnectTimer = null;
+
+        const colorThemes = {
+            rose: { bg: 'bg-rose-600', border: 'border-rose-500', text: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+            sky: { bg: 'bg-sky-600', border: 'border-sky-500', text: 'text-sky-400', badge: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+            emerald: { bg: 'bg-emerald-600', border: 'border-emerald-500', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+            amber: { bg: 'bg-amber-500', border: 'border-amber-500', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+            purple: { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' }
+        };
+
+        // Cek parameter URL (?room=XXXX) untuk memudahkan peserta yang scan QR Code
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const roomParam = params.get('room');
+            if (roomParam) {
+                document.getElementById('input-room-code').value = roomParam.toUpperCase().slice(0, 4);
+                showToast(`Kode ruang ${roomParam.toUpperCase()} terisi otomatis! Masukkan nama regu.`, 'info');
+            }
+
+            // Setup pemilih warna regu
+            document.querySelectorAll('.color-opt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-opt').forEach(b => {
+                        b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900', 'opacity-100');
+                        b.classList.add('opacity-70');
+                    });
+                    btn.classList.remove('opacity-70');
+                    btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900', 'opacity-100');
+                    selectedColor = btn.dataset.color;
+                });
+            });
+
+            // Setup tombol bel raksasa dengan pointerdown untuk respons tanpa delay 300ms
+            const megaBuzzer = document.getElementById('btn-mega-buzzer');
+            megaBuzzer.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                sendBuzzSignal();
+            });
+        });
+
+        function showView(viewId) {
+            ['view-landing', 'view-host', 'view-participant'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function toggleModal(modalId, show) {
+            const el = document.getElementById(modalId);
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-slate-800 border-slate-700 text-slate-100',
+                success: 'bg-emerald-900/95 border-emerald-500/50 text-emerald-100',
+                error: 'bg-rose-900/95 border-rose-500/50 text-rose-100',
+                warning: 'bg-amber-900/95 border-amber-500/50 text-amber-100'
+            };
+            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl border shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Tanpa I, O, 0, 1 agar tidak membingungkan
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        /**
+         * =========================================================================
+         * 3. LOGIKA HOST / PANITIA (SERVER INTERLOCK UTAMA)
+         * =========================================================================
+         */
+        function startAsHost() {
+            initAudio();
+            const btn = document.getElementById('btn-create-room');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Membuat Ruang...</span>`;
+
+            role = 'host';
+            roomCode = generateRoomCode();
+            const peerId = PEER_PREFIX + roomCode;
+
+            peer = new Peer(peerId, { debug: 1 });
+
+            peer.on('open', (id) => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> <span>Buat Ruang Lomba (Host)</span>`;
+
+                document.getElementById('host-room-code').textContent = roomCode;
+                document.getElementById('empty-room-hint').textContent = roomCode;
+                generateRoomQRCode(roomCode);
+                showView('view-host');
+                renderHostTeams();
+                showToast(`Ruang ${roomCode} berhasil dibuat!`, 'success');
+            });
+
+            peer.on('connection', (conn) => {
+                handleIncomingParticipant(conn);
+            });
+
+            peer.on('error', (err) => {
+                console.error("Peer Host Error:", err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> <span>Buat Ruang Lomba (Host)</span>`;
+                if (err.type === 'unavailable-id') {
+                    // Jika kode bentrok, coba ulang otomatis
+                    startAsHost();
+                } else {
+                    showToast(`Koneksi jaringan bermasalah: ${err.type}. Pastikan terhubung ke internet/router.`, 'error');
+                }
+            });
+        }
+
+        function generateRoomQRCode(code) {
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = '';
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', code);
+            try {
+                new QRCode(container, {
+                    text: url.toString(),
+                    width: 92,
+                    height: 92,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                container.innerHTML = `<span class="text-slate-900 font-mono font-bold text-xs">${code}</span>`;
+            }
+        }
+
+        function copyShareLink() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', roomCode);
+            const tempInput = document.createElement('input');
+            tempInput.value = url.toString();
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Link undangan peserta disalin ke clipboard!', 'success');
+        }
+
+        function handleIncomingParticipant(conn) {
+            conn.on('open', () => {
+                hostConnections[conn.peer] = conn;
+            });
+
+            conn.on('data', (data) => {
+                if (!data || !data.type) return;
+
+                if (data.type === 'JOIN') {
+                    const tId = data.teamId;
+                    const existingScore = teams[tId] ? teams[tId].score : 0;
+                    teams[tId] = {
+                        id: tId,
+                        peerId: conn.peer,
+                        name: data.name || 'Regu Tanpa Nama',
+                        color: data.color || 'sky',
+                        score: existingScore,
+                        connected: true
+                    };
+                    hostConnections[conn.peer] = conn;
+                    updateHostConnectionCount();
+                    renderHostTeams();
+                    syncStateToParticipant(conn, tId);
+                    showToast(`${teams[tId].name} bergabung ke ruang!`, 'info');
+                } 
+                else if (data.type === 'BUZZ') {
+                    processHostBuzz(data.teamId);
+                }
+            });
+
+            conn.on('close', () => {
+                delete hostConnections[conn.peer];
+                Object.values(teams).forEach(t => {
+                    if (t.peerId === conn.peer) t.connected = false;
+                });
+                updateHostConnectionCount();
+                renderHostTeams();
+            });
+        }
+
+        function updateHostConnectionCount() {
+            const activeCount = Object.values(teams).filter(t => t.connected).length;
+            const totalCount = Object.keys(teams).length;
+            document.getElementById('participant-count-badge').textContent = `${activeCount}/${totalCount} Aktif`;
+            const statusEl = document.getElementById('host-connection-status');
+            if (activeCount > 0) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${activeCount} regu terhubung real-time`;
+            } else {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Menunggu peserta bergabung...`;
+            }
+        }
+
+        /**
+         * INTI ALGORITMA INTERLOCK (ATOMIC LOCKING DI HOST)
+         */
+        function processHostBuzz(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+
+            // Jika bel sedang dikunci global oleh panitia, abaikan
+            if (buzzerState === 'GLOBAL_LOCKED') return;
+
+            const now = performance.now();
+
+            // Jika status bel masih OPEN -> Regu ini adalah PEMENANG PERTAMA!
+            if (buzzerState === 'OPEN') {
+                buzzerState = 'LOCKED_BY_TEAM';
+                firstPressHostTime = now;
+                lockedByTeam = {
+                    id: team.id,
+                    name: team.name,
+                    color: team.color
+                };
+
+                // Catat di log urutan sebagai urutan #1 (0.000s)
+                pressLog = [{
+                    teamId: team.id,
+                    name: team.name,
+                    color: team.color,
+                    deltaMs: 0
+                }];
+
+                // Putar suara bel utama di perangkat Host
+                playTone('buzzer');
+
+                // Langsung broadcast perintah LOCK ke semua peserta secara serentak!
+                broadcastToAll({
+                    type: 'STATE_UPDATE',
+                    buzzerState: 'LOCKED_BY_TEAM',
+                    winnerTeamId: team.id,
+                    winnerName: team.name
+                });
+
+                updateHostBuzzerUI();
+                renderPressLog();
+            } 
+            // Jika sudah terkunci oleh regu pertama, tetap catat regu lain yang menekan hampir bersamaan (untuk log selisih milidetik)
+            else if (buzzerState === 'LOCKED_BY_TEAM') {
+                const alreadyLogged = pressLog.some(item => item.teamId === team.id);
+                if (!alreadyLogged && firstPressHostTime !== null) {
+                    const delta = Math.max(1, Math.round(now - firstPressHostTime));
+                    pressLog.push({
+                        teamId: team.id,
+                        name: team.name,
+                        color: team.color,
+                        deltaMs: delta
+                    });
+                    renderPressLog();
+                }
+            }
+        }
+
+        function hostResetBuzzer() {
+            initAudio();
+            playTone('ping');
+            buzzerState = 'OPEN';
+            lockedByTeam = null;
+            firstPressHostTime = null;
+            pressLog = [];
+
+            broadcastToAll({
+                type: 'STATE_UPDATE',
+                buzzerState: 'OPEN',
+                winnerTeamId: null,
+                winnerName: null
+            });
+
+            updateHostBuzzerUI();
+            renderPressLog();
+        }
+
+        function hostToggleGlobalLock() {
+            initAudio();
+            if (buzzerState === 'GLOBAL_LOCKED') {
+                // Buka kembali
+                hostResetBuzzer();
+            } else {
+                buzzerState = 'GLOBAL_LOCKED';
+                lockedByTeam = null;
+                firstPressHostTime = null;
+                pressLog = [];
+
+                broadcastToAll({
+                    type: 'STATE_UPDATE',
+                    buzzerState: 'GLOBAL_LOCKED',
+                    winnerTeamId: null,
+                    winnerName: null
+                });
+
+                updateHostBuzzerUI();
+                renderPressLog();
+            }
+        }
+
+        function updateHostBuzzerUI() {
+            const panel = document.getElementById('host-status-panel');
+            const badge = document.getElementById('host-status-badge');
+            const title = document.getElementById('host-winner-display');
+            const sub = document.getElementById('host-winner-sub');
+            const btnLock = document.getElementById('btn-global-lock');
+
+            // Reset kelas warna panel
+            panel.className = "lg:col-span-8 rounded-3xl p-6 flex flex-col justify-between shadow-2xl transition-all duration-300 relative overflow-hidden border-2 ";
+
+            if (buzzerState === 'OPEN') {
+                panel.classList.add('bg-slate-900', 'border-emerald-500/40');
+                badge.className = "px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold uppercase tracking-widest mb-3";
+                badge.textContent = "STATUS: SIAP MENERIMA BEL";
+                title.textContent = "BEL TERBUKA";
+                title.className = "text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-emerald-400 mb-2";
+                sub.textContent = "Semua regu dapat menekan bel sekarang";
+                btnLock.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Kunci Semua</span>`;
+            } 
+            else if (buzzerState === 'LOCKED_BY_TEAM' && lockedByTeam) {
+                panel.classList.add('bg-gradient-to-br', 'from-amber-950', 'to-slate-900', 'border-amber-400');
+                badge.className = "px-4 py-1.5 rounded-full bg-amber-500 text-slate-950 text-xs font-black uppercase tracking-widest mb-3 animate-bounce-short";
+                badge.textContent = "BEL TERKUNCI • TERCEPAT!";
+                title.textContent = lockedByTeam.name.toUpperCase();
+                title.className = "text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-amber-300 mb-2 drop-shadow-lg";
+                sub.textContent = "Silakan menjawab pertanyaan! Tekan Reset untuk soal berikutnya.";
+                btnLock.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Kunci Semua</span>`;
+            } 
+            else if (buzzerState === 'GLOBAL_LOCKED') {
+                panel.classList.add('bg-rose-950/60', 'border-rose-500/50');
+                badge.className = "px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-extrabold uppercase tracking-widest mb-3";
+                badge.textContent = "MODE JEDA / PEMBACAAN SOAL";
+                title.textContent = "BEL DIKUNCI PANITIA";
+                title.className = "text-3xl sm:text-5xl font-black tracking-tight text-rose-400 mb-2";
+                sub.textContent = "Tombol peserta dinonaktifkan sementara hingga panitia membuka bel";
+                btnLock.innerHTML = `<i class="fa-solid fa-lock-open"></i> <span>Buka Kunci</span>`;
+            }
+        }
+
+        function renderPressLog() {
+            const container = document.getElementById('host-press-log');
+            if (pressLog.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-600 text-xs italic">Belum ada bel yang ditekan pada sesi ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = pressLog.map((item, idx) => {
+                const isFirst = idx === 0;
+                const timeText = isFirst ? '0.000s (TERCEPAT)' : `+${(item.deltaMs / 1000).toFixed(3)}s`;
+                const theme = colorThemes[item.color] || colorThemes.sky;
+                return `
+                    <div class="flex items-center justify-between p-3 rounded-2xl border ${isFirst ? 'bg-amber-500/15 border-amber-500/40' : 'bg-slate-950/80 border-slate-800'}">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg ${isFirst ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400 font-bold'} text-xs flex items-center justify-center">
+                                #${idx + 1}
+                            </span>
+                            <span class="w-2.5 h-2.5 rounded-full ${theme.bg}"></span>
+                            <span class="font-bold text-sm ${isFirst ? 'text-white' : 'text-slate-300'}">${escapeHtml(item.name)}</span>
+                        </div>
+                        <span class="font-mono text-xs font-extrabold ${isFirst ? 'text-amber-400' : 'text-slate-400'}">
+                            ${timeText}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHostTeams() {
+            const container = document.getElementById('host-teams-list');
+            const teamList = Object.values(teams);
+
+            if (teamList.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500">
+                        <i class="fa-solid fa-users text-3xl mb-2 opacity-50"></i>
+                        <p class="font-semibold text-sm">Belum ada regu yang bergabung</p>
+                        <p class="text-xs mt-1">Bagikan kode ruang <span class="font-mono text-amber-400 font-bold">${roomCode}</span> kepada peserta</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = teamList.map(team => {
+                const theme = colorThemes[team.color] || colorThemes.sky;
+                return `
+                    <div class="bg-slate-950 border ${team.connected ? 'border-slate-800' : 'border-rose-900/50 opacity-75'} rounded-2xl p-4 flex flex-col justify-between gap-4">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl ${theme.bg} flex items-center justify-center font-black text-white shrink-0 shadow">
+                                    ${escapeHtml(team.name.charAt(0).toUpperCase())}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-extrabold text-base text-white truncate">${escapeHtml(team.name)}</h4>
+                                        <span class="w-2 h-2 rounded-full shrink-0 ${team.connected ? 'bg-emerald-400' : 'bg-rose-500'}" title="${team.connected ? 'Online' : 'Terputus'}"></span>
+                                    </div>
+                                    <span class="text-[11px] ${team.connected ? 'text-slate-400' : 'text-rose-400'}">
+                                        ${team.connected ? 'Siap' : 'Koneksi terputus'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="kickTeam('${team.id}')" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-rose-600/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition" title="Keluarkan Regu">
+                                <i class="fa-solid fa-user-xmark text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Kontrol Skor Regu -->
+                        <div class="flex items-center justify-between bg-slate-900 px-3 py-2 rounded-xl border border-slate-800/80">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Skor</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="changeScore('${team.id}', -100)" class="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-mono text-xs font-bold transition">-100</button>
+                                <button onclick="changeScore('${team.id}', -50)" class="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-mono text-xs font-bold transition">-50</button>
+                                <span onclick="promptCustomScore('${team.id}')" class="font-mono text-xl font-black text-white px-2 cursor-pointer hover:text-amber-400" title="Klik untuk ubah skor manual">
+                                    ${team.score}
+                                </span>
+                                <button onclick="changeScore('${team.id}', 50)" class="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold transition">+50</button>
+                                <button onclick="changeScore('${team.id}', 100)" class="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold transition">+100</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function changeScore(teamId, delta) {
+            if (!teams[teamId]) return;
+            teams[teamId].score += delta;
+            renderHostTeams();
+            sendScoreToTeam(teamId);
+        }
+
+        function promptCustomScore(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            // Gunakan inline input pengganti prompt/alert
+            const newVal = window.prompt(`Masukkan skor baru untuk ${team.name}:`, team.score);
+            if (newVal !== null && !isNaN(parseInt(newVal))) {
+                team.score = parseInt(newVal);
+                renderHostTeams();
+                sendScoreToTeam(teamId);
+            }
+        }
+
+        function resetAllScores() {
+            Object.values(teams).forEach(t => {
+                t.score = 0;
+                sendScoreToTeam(t.id);
+            });
+            renderHostTeams();
+            showToast('Semua skor regu telah di-reset ke 0.', 'info');
+        }
+
+        function triggerJudgeSound(type) {
+            initAudio();
+            playTone(type);
+            broadcastToAll({ type: 'SOUND', sound: type });
+        }
+
+        function kickTeam(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            const conn = hostConnections[team.peerId];
+            if (conn) {
+                conn.send({ type: 'KICKED' });
+                setTimeout(() => conn.close(), 100);
+            }
+            delete teams[teamId];
+            updateHostConnectionCount();
+            renderHostTeams();
+            showToast(`${team.name} dikeluarkan dari ruang.`, 'warning');
+        }
+
+        function sendScoreToTeam(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            const conn = hostConnections[team.peerId];
+            if (conn && conn.open) {
+                conn.send({ type: 'SCORE_UPDATE', score: team.score });
+            }
+        }
+
+        function syncStateToParticipant(conn, teamId) {
+            if (!conn || !conn.open) return;
+            conn.send({
+                type: 'STATE_UPDATE',
+                buzzerState: buzzerState,
+                winnerTeamId: lockedByTeam ? lockedByTeam.id : null,
+                winnerName: lockedByTeam ? lockedByTeam.name : null,
+                score: teams[teamId] ? teams[teamId].score : 0
+            });
+        }
+
+        function broadcastToAll(payload) {
+            Object.values(hostConnections).forEach(conn => {
+                if (conn && conn.open) {
+                    conn.send(payload);
+                }
+            });
+        }
+
+        /**
+         * =========================================================================
+         * 4. LOGIKA PESERTA / REGU (TOMBOL BEL REAL-TIME)
+         * =========================================================================
+         */
+        function joinAsParticipant() {
+            initAudio();
+            const codeInput = document.getElementById('input-room-code').value.trim().toUpperCase();
+            const nameInput = document.getElementById('input-team-name').value.trim();
+
+            if (codeInput.length !== 4) {
+                showToast('Masukkan 4 karakter Kode Ruang dari layar Panitia!', 'error');
+                return;
+            }
+            if (!nameInput) {
+                showToast('Masukkan Nama Regu Anda terlebih dahulu!', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-join-room');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menghubungkan...</span>`;
+
+            role = 'participant';
+            roomCode = codeInput;
+            myTeamName = nameInput;
+
+            if (peer) peer.destroy();
+            peer = new Peer({ debug: 1 });
+
+            peer.on('open', () => {
+                connectToHost();
+            });
+
+            peer.on('error', (err) => {
+                console.error("Participant Peer Error:", err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> <span>Gabung & Siapkan Bel</span>`;
+                if (err.type === 'peer-unavailable') {
+                    showToast(`Ruang "${roomCode}" tidak ditemukan! Periksa kembali kode ruang panitia.`, 'error');
+                } else {
+                    showToast(`Gagal terhubung: ${err.type}`, 'error');
+                }
+            });
+        }
+
+        function connectToHost() {
+            const targetPeerId = PEER_PREFIX + roomCode;
+            hostConn = peer.connect(targetPeerId, { reliable: true });
+
+            hostConn.on('open', () => {
+                const btn = document.getElementById('btn-join-room');
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> <span>Gabung & Siapkan Bel</span>`;
+
+                // Kirim identitas regu ke Host
+                hostConn.send({
+                    type: 'JOIN',
+                    teamId: myTeamId,
+                    name: myTeamName,
+                    color: selectedColor
+                });
+
+                // Setup UI Peserta
+                const theme = colorThemes[selectedColor] || colorThemes.sky;
+                const badge = document.getElementById('p-team-badge');
+                badge.className = `w-12 h-12 rounded-2xl ${theme.bg} flex items-center justify-center font-black text-xl text-white shadow-md`;
+                badge.textContent = myTeamName.charAt(0).toUpperCase();
+                document.getElementById('p-team-name').textContent = myTeamName;
+                document.getElementById('p-room-code').textContent = roomCode;
+                document.getElementById('p-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                document.getElementById('p-status-footer').innerHTML = `<i class="fa-solid fa-wifi text-emerald-400"></i> Terhubung Real-Time ke Panitia`;
+
+                showView('view-participant');
+                playTone('ping');
+            });
+
+            hostConn.on('data', (data) => {
+                if (!data || !data.type) return;
+
+                if (data.type === 'STATE_UPDATE') {
+                    if (typeof data.score === 'number') {
+                        myScore = data.score;
+                        document.getElementById('p-team-score').textContent = myScore;
+                    }
+                    updateParticipantBuzzerUI(data.buzzerState, data.winnerTeamId, data.winnerName);
+                } 
+                else if (data.type === 'SCORE_UPDATE') {
+                    myScore = data.score;
+                    document.getElementById('p-team-score').textContent = myScore;
+                } 
+                else if (data.type === 'SOUND') {
+                    playTone(data.sound);
+                } 
+                else if (data.type === 'KICKED') {
+                    showToast('Anda telah dikeluarkan dari ruang oleh Panitia.', 'error');
+                    leaveRoom();
+                }
+            });
+
+            hostConn.on('close', () => {
+                document.getElementById('p-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+                document.getElementById('p-status-footer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Koneksi terputus, mencoba menyambung ulang...`;
+                
+                // Auto-reconnect setelah 2 detik jika masih di halaman peserta
+                clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(() => {
+                    if (role === 'participant' && peer && !peer.disconnected) {
+                        connectToHost();
+                    }
+                }, 2000);
+            });
+        }
+
+        function sendBuzzSignal() {
+            initAudio();
+            if (participantBuzzerStatus !== 'OPEN') return;
+            if (!hostConn || !hostConn.open) {
+                showToast('Koneksi ke Host sedang terputus!', 'error');
+                return;
+            }
+
+            // Optimistic UI feedback saat disentuh (getar HP jika didukung)
+            if (navigator.vibrate) navigator.vibrate(60);
+
+            hostConn.send({
+                type: 'BUZZ',
+                teamId: myTeamId
+            });
+        }
+
+        function updateParticipantBuzzerUI(state, winnerTeamId, winnerName) {
+            const btn = document.getElementById('btn-mega-buzzer');
+            const icon = document.getElementById('buzzer-icon');
+            const mainText = document.getElementById('buzzer-main-text');
+            const subText = document.getElementById('buzzer-sub-text');
+
+            if (state === 'OPEN') {
+                participantBuzzerStatus = 'OPEN';
+                btn.disabled = false;
+                btn.className = "buzzer-btn w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[2.5rem] bg-gradient-to-b from-emerald-400 to-emerald-600 border-b-[14px] border-emerald-800 shadow-[0_20px_50px_rgba(16,185,129,0.35)] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden cursor-pointer";
+                icon.className = "fa-solid fa-bell text-5xl sm:text-6xl text-white";
+                mainText.textContent = "TEKAN BEL!";
+                subText.textContent = "Sentuh area ini secepat mungkin saat siap menjawab";
+            } 
+            else if (state === 'LOCKED_BY_TEAM') {
+                btn.disabled = true;
+                if (winnerTeamId === myTeamId) {
+                    // Regu ini yang menang bel!
+                    participantBuzzerStatus = 'WINNER';
+                    playTone('buzzer');
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 150]);
+                    btn.className = "w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[2.5rem] bg-gradient-to-b from-amber-400 to-orange-500 border-b-[14px] border-orange-700 shadow-[0_20px_60px_rgba(245,158,11,0.5)] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden cursor-not-allowed";
+                    icon.className = "fa-solid fa-trophy text-5xl sm:text-6xl text-slate-950 animate-bounce";
+                    mainText.textContent = "ANDA TERCEPAT!";
+                    mainText.className = "text-3xl sm:text-5xl font-black tracking-tight text-slate-950 uppercase";
+                    subText.textContent = "Silakan sampaikan jawaban Anda kepada juri!";
+                    subText.className = "text-sm sm:text-base font-extrabold text-slate-900 mt-2 max-w-xs";
+                } else {
+                    // Terkunci oleh regu lain
+                    participantBuzzerStatus = 'LOCKED_OTHER';
+                    btn.className = "w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[2.5rem] bg-gradient-to-b from-rose-600 to-rose-800 border-b-[14px] border-rose-950 opacity-95 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden cursor-not-allowed";
+                    icon.className = "fa-solid fa-lock text-5xl sm:text-6xl text-rose-200";
+                    mainText.textContent = "TERKUNCI!";
+                    mainText.className = "text-3xl sm:text-5xl font-black tracking-tight text-white uppercase";
+                    subText.textContent = `${winnerName || 'Regu Lain'} menekan lebih dulu!`;
+                    subText.className = "text-sm sm:text-base font-bold text-rose-100 mt-2 max-w-xs";
+                }
+            } 
+            else if (state === 'GLOBAL_LOCKED') {
+                participantBuzzerStatus = 'GLOBAL_LOCKED';
+                btn.disabled = true;
+                btn.className = "w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[2.5rem] bg-slate-800 border-b-[14px] border-slate-950 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden cursor-not-allowed";
+                icon.className = "fa-solid fa-hand text-5xl sm:text-6xl text-slate-400";
+                mainText.textContent = "BEL DITAHAN";
+                mainText.className = "text-3xl sm:text-5xl font-black tracking-tight text-slate-300 uppercase";
+                subText.textContent = "Tunggu panitia selesai membacakan soal...";
+                subText.className = "text-sm sm:text-base font-medium text-slate-400 mt-2 max-w-xs";
+            }
+        }
+
+        function leaveRoom() {
+            clearTimeout(reconnectTimer);
+            role = null;
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            hostConnections = {};
+            teams = {};
+            buzzerState = 'OPEN';
+            lockedByTeam = null;
+            pressLog = [];
+            showView('view-landing');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

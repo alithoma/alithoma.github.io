@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xpert Academy - Presensi & Jurnal Mengajar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .font-display {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        /* Custom scrollbar untuk dropdown siswa */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- ===================================================================== -->
+    <!-- KONFIGURASI GOOGLE APPS SCRIPT (BARIS 47)                             -->
+    <!-- ===================================================================== -->
+    <script>
+        // BARIS 47: Ganti teks di dalam tanda kutip di bawah ini dengan URL Web App Google Apps Script Anda!
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvX__JiHzpyQYlPG2pvPd1clbTgvm6zuVf4-LPjHITKnFYjP4_GbyijiFFcvtPLNwGIQ/exec";
+        
+        // Contoh jika sudah diisi:
+        // const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
+    </script>
+    <!-- ===================================================================== -->
+
+    <!-- Navbar / Header -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl shadow-inner">
+                    <i data-lucide="cpu" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg sm:text-xl tracking-tight leading-none text-white">
+                        XPERT <span class="text-indigo-400">ACADEMY</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 tracking-wider uppercase mt-0.5">Coding • Robotics • STEAM</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Status Koneksi -->
+                <div id="connectionBadge" class="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="connectionText">Mode Demo (Belum Terhubung)</span>
+                </div>
+                
+                <!-- Tombol Bantuan Setup Google Sheet -->
+                <button onclick="toggleSetupModal()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition border border-slate-700">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+                    <span class="hidden sm:inline">Setup Sheet</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        
+        <!-- Alert Banner jika URL belum diisi -->
+        <div id="demoAlert" class="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3 shadow-sm">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+            <div class="text-sm text-amber-800 flex-grow">
+                <p class="font-semibold">URL Google Apps Script belum diatur (Baris 47)</p>
+                <p class="mt-1 text-amber-700">Saat ini aplikasi menggunakan daftar siswa contoh. Isi <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">GOOGLE_SCRIPT_URL</code> pada <strong>baris ke-47</strong> kode untuk menarik daftar siswa asli dan menyimpan presensi ke Google Sheets. Klik tombol <strong>Setup Sheet</strong> di kanan atas untuk melihat kode script-nya.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+            
+            <!-- Kolom Kiri: Form Presensi & Input Materi (7 Kolom) -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 text-white flex items-center justify-between">
+                        <div>
+                            <h2 class="font-display font-bold text-lg sm:text-xl">Form Presensi & Jurnal</h2>
+                            <p class="text-indigo-100 text-xs sm:text-sm mt-0.5">Catat kehadiran dan progres belajar siswa</p>
+                        </div>
+                        <button type="button" onclick="fetchStudentsFromSheet()" title="Muat Ulang Data Siswa" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition flex items-center space-x-1 text-xs">
+                            <i data-lucide="refresh-cw" id="refreshIcon" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Sync Siswa</span>
+                        </button>
+                    </div>
+
+                    <form id="attendanceForm" class="p-6 space-y-5">
+                        
+                        <!-- Tanggal & Nama Mentor -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Tanggal Pertemuan</label>
+                                <div class="relative">
+                                    <input type="date" id="tanggalInput" required
+                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Nama Mentor / Pengajar</label>
+                                <div class="relative">
+                                    <input type="text" id="mentorInput" placeholder="Contoh: Ali Thomas" required
+                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                    <i data-lucide="user-check" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pilih Siswa (Searchable Dropdown) -->
+                        <div class="relative" id="studentDropdownContainer">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Pilih Siswa (Data Admin)</label>
+                                <span id="studentCountBadge" class="text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">Memuat...</span>
+                            </div>
+                            
+                            <!-- Trigger Button -->
+                            <button type="button" id="studentSelectBtn" onclick="toggleStudentDropdown()"
+                                class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 hover:border-indigo-400 rounded-xl text-left text-sm transition focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <div class="flex items-center space-x-2.5 truncate">
+                                    <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="truncate">
+                                        <span id="selectedStudentName" class="font-medium text-slate-500">-- Pilih Nama Siswa --</span>
+                                        <span id="selectedStudentProgram" class="hidden text-xs text-slate-400 ml-2"></span>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+                            </button>
+                            <input type="hidden" id="selectedStudentId" required>
+
+                            <!-- Dropdown Panel -->
+                            <div id="studentDropdownMenu" class="hidden absolute z-20 mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                                <div class="p-2.5 border-b border-slate-100 bg-slate-50/50">
+                                    <div class="relative">
+                                        <input type="text" id="studentSearchInput" onkeyup="filterStudents()" placeholder="Ketik nama siswa..."
+                                            class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                    </div>
+                                </div>
+                                <ul id="studentListUl" class="max-h-56 overflow-y-auto custom-scrollbar divide-y divide-slate-100 p-1">
+                                    <!-- Daftar siswa di-render via JS -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Status Kehadiran (Hanya Hadir) -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Status Kehadiran</label>
+                            <div>
+                                <label class="cursor-pointer block">
+                                    <input type="radio" name="status" value="Hadir" class="peer sr-only" checked>
+                                    <div class="py-2.5 px-4 rounded-xl border border-emerald-600 bg-emerald-600 text-white text-center text-sm font-semibold transition shadow-sm flex items-center justify-center space-x-2">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                        <span>Hadir</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Input Materi yang Diajarkan -->
+                        <div id="materiSection" class="space-y-3 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    Topik / Modul Materi yang Diajarkan
+                                </label>
+                                <input type="text" id="topikInput" placeholder="Contoh: S4A - Lesson 1 Spur Gear Transmission" required
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    Detail Progres & Catatan Siswa
+                                </label>
+                                <textarea id="catatanInput" rows="3" placeholder="Tuliskan pencapaian siswa hari ini, kendala yang dihadapi, atau target pertemuan berikutnya..."
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition resize-none"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-2">
+                            <button type="submit" id="submitBtn"
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center space-x-2">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Simpan Presensi & Jurnal ke Sheet</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Riwayat Input Sesi Ini & Ringkasan (5 Kolom) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Card Statistik Singkat -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Total Siswa Terdaftar</p>
+                            <p id="statTotalSiswa" class="text-xl font-display font-bold text-slate-800">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Tercatat Sesi Ini</p>
+                            <p id="statTercatat" class="text-xl font-display font-bold text-slate-800">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riwayat Input Hari Ini -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col max-h-[540px]">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="history" class="w-4 h-4 text-indigo-600"></i>
+                            <h3 class="font-display font-bold text-slate-800 text-base">Log Presensi Terbaru</h3>
+                        </div>
+                        <span class="text-xs text-slate-400">Real-time Log</span>
+                    </div>
+
+                    <div id="recentLogsContainer" class="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-grow">
+                        <!-- Empty state -->
+                        <div id="emptyLogState" class="text-center py-10 px-4">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-600">Belum ada presensi dicatat</p>
+                            <p class="text-xs text-slate-400 mt-1">Data yang Anda kirim akan muncul di sini dan otomatis masuk ke Google Sheets.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toastContent" class="flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-medium">
+            <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 flex-shrink-0"></i>
+            <span id="toastMessage">Berhasil disimpan!</span>
+        </div>
+    </div>
+
+    <!-- Modal Panduan Setup Google Sheets & Apps Script -->
+    <div id="setupModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-400"></i>
+                    <h3 class="font-display font-bold text-lg">Panduan Integrasi Google Sheets</h3>
+                </div>
+                <button onclick="toggleSetupModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-sm text-slate-600">
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-indigo-900">
+                    <p class="font-semibold mb-1">1. Siapkan 2 Tab (Sheet) di Google Sheets Anda:</p>
+                    <ul class="list-disc list-inside space-y-1 text-xs sm:text-sm">
+                        <li>Tab 1 beri nama <strong>Siswa</strong> &rarr; Kolom A: <code class="bg-white px-1 rounded">ID</code>, Kolom B: <code class="bg-white px-1 rounded">Nama Siswa</code>, Kolom C: <code class="bg-white px-1 rounded">Program</code> (Coding/Robotics/STEAM), Kolom D: <code class="bg-white px-1 rounded">Level/Kelas</code>. <em>(Diisi oleh Admin)</em></li>
+                        <li>Tab 2 beri nama <strong>Presensi</strong> &rarr; Kolom A s/d H: <code class="bg-white px-1 rounded">Timestamp</code>, <code class="bg-white px-1 rounded">Tanggal</code>, <code class="bg-white px-1 rounded">ID Siswa</code>, <code class="bg-white px-1 rounded">Nama Siswa</code>, <code class="bg-white px-1 rounded">Program</code>, <code class="bg-white px-1 rounded">Status</code>, <code class="bg-white px-1 rounded">Materi</code>, <code class="bg-white px-1 rounded">Catatan</code>, <code class="bg-white px-1 rounded">Mentor</code>.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <p class="font-semibold text-slate-800">2. Salin Kode Google Apps Script ini:</p>
+                        <button onclick="copyAppsScript()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center space-x-1 transition">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>Salin Kode Script</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">Buka Google Sheets &rarr; <strong>Ekstensi</strong> &rarr; <strong>Apps Script</strong> &rarr; Tempel kode di bawah &rarr; Klik <strong>Terapkan (Deploy)</strong> &rarr; <strong>Deployment Baru</strong> &rarr; Jenis: <strong>Aplikasi Web</strong> &rarr; Akses: <strong>Siapa saja (Anyone)</strong>.</p>
+                    <pre id="appsScriptCode" class="bg-slate-900 text-emerald-300 p-4 rounded-2xl text-xs overflow-x-auto font-mono leading-relaxed select-all">function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetSiswa = ss.getSheetByName("Siswa");
+  
+  if (!sheetSiswa) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Sheet 'Siswa' tidak ditemukan" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var data = sheetSiswa.getDataRange().getValues();
+  var students = [];
+  
+  // Mulai dari baris ke-2 (index 1) untuk melewati header
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][1]) { // Pastikan nama siswa tidak kosong
+      students.push({
+        id: data[i][0] || "STD-" + i,
+        nama: data[i][1],
+        program: data[i][2] || "Coding",
+        level: data[i][3] || "Basic"
+      });
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({ status: "success", data: students }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetPresensi = ss.getSheetByName("Presensi");
+    
+    // Otomatis buat sheet Presensi jika belum ada
+    if (!sheetPresensi) {
+      sheetPresensi = ss.insertSheet("Presensi");
+      sheetPresensi.appendRow(["Timestamp", "Tanggal", "ID Siswa", "Nama Siswa", "Program", "Status", "Materi", "Catatan", "Mentor"]);
+    }
+
+    var params = JSON.parse(e.postData.contents);
+    
+    sheetPresensi.appendRow([
+      new Date(),
+      params.tanggal,
+      params.idSiswa,
+      params.namaSiswa,
+      params.program,
+      params.status,
+      params.materi,
+      params.catatan,
+      params.mentor
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Data tersimpan" }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-800">
+                    <strong>3. Langkah Terakhir:</strong> Salin URL Web App yang didapat dari proses Deploy, lalu tempelkan pada <strong>BARIS KE-47</strong> di file HTML ini (<code class="font-mono">const GOOGLE_SCRIPT_URL = "...";</code>).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Inisialisasi ikon Lucide
+        lucide.createIcons();
+
+        // Data Mockup (Digunakan otomatis jika GOOGLE_SCRIPT_URL belum diisi)
+        const MOCK_STUDENTS = [
+            { id: "XA-001", nama: "Atharizz Calief", program: "Coding", level: "Scratch Junior" },
+            { id: "XA-002", nama: "Clarissa Putri Wijaya", program: "Robotics", level: "LEGO Spike Prime" },
+            { id: "XA-003", nama: "Kenzo Pratama", program: "Coding", level: "Python Game Dev" },
+            { id: "XA-004", nama: "Nayla Azzahra", program: "STEAM", level: "3D Design & Science" },
+            { id: "XA-005", nama: "Rafael Tan", program: "Robotics", level: "Arduino IoT" },
+            { id: "XA-006", nama: "Zivanna Letisha", program: "Coding", level: "Roblox Studio Lua" },
+            { id: "XA-007", nama: "Gibran Alfarizi", program: "STEAM", level: "Electronics & Micro:bit" }
+        ];
+
+        let studentsData = [];
+        let sessionLogs = [];
+        const isConfigured = GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "MASUKKAN_URL_WEB_APP_GOOGLE_APPS_SCRIPT_DISINI" && GOOGLE_SCRIPT_URL.startsWith("http");
+
+        // Fungsi mendapatkan tanggal lokal hari ini (format YYYY-MM-DD) sesuai zona waktu perangkat
+        function getTodayLocalDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Set tanggal hari ini secara otomatis setiap kali web app dibuka
+        document.addEventListener("DOMContentLoaded", () => {
+            const tanggalInput = document.getElementById('tanggalInput');
+            if (tanggalInput) {
+                tanggalInput.value = getTodayLocalDate();
+            }
+
+            updateConnectionStatus();
+            fetchStudentsFromSheet();
+
+            // Tutup dropdown jika klik di luar area
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('studentDropdownContainer');
+                if (!container.contains(e.target)) {
+                    document.getElementById('studentDropdownMenu').classList.add('hidden');
+                }
+            });
+        });
+
+        function updateConnectionStatus() {
+            const badge = document.getElementById('connectionBadge');
+            const text = document.getElementById('connectionText');
+            const demoAlert = document.getElementById('demoAlert');
+
+            if (isConfigured) {
+                badge.className = "hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                badge.querySelector('span').className = "w-2 h-2 rounded-full bg-emerald-400";
+                text.textContent = "Terhubung ke Google Sheets";
+                demoAlert.classList.add('hidden');
+            }
+        }
+
+        // Mengambil daftar siswa dari Google Sheets (atau menggunakan mock data)
+        async function fetchStudentsFromSheet() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('animate-spin');
+
+            if (!isConfigured) {
+                setTimeout(() => {
+                    studentsData = [...MOCK_STUDENTS];
+                    renderStudentDropdown(studentsData);
+                    document.getElementById('statTotalSiswa').textContent = studentsData.length;
+                    document.getElementById('studentCountBadge').textContent = `${studentsData.length} Siswa (Demo)`;
+                    refreshIcon.classList.remove('animate-spin');
+                }, 400);
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const result = await response.json();
+
+                if (result.status === "success" && Array.isArray(result.data)) {
+                    studentsData = result.data;
+                    renderStudentDropdown(studentsData);
+                    document.getElementById('statTotalSiswa').textContent = studentsData.length;
+                    document.getElementById('studentCountBadge').textContent = `${studentsData.length} Siswa`;
+                    showToast("Daftar siswa berhasil disinkronkan!", "success");
+                } else {
+                    throw new Error(result.message || "Format data tidak sesuai");
+                }
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                showToast("Gagal memuat siswa dari Sheet. Cek URL / izin akses.", "error");
+                document.getElementById('studentCountBadge').textContent = "Gagal Memuat";
+            } finally {
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        // Render daftar siswa ke dalam dropdown
+        function renderStudentDropdown(list) {
+            const ul = document.getElementById('studentListUl');
+            ul.innerHTML = "";
+
+            if (list.length === 0) {
+                ul.innerHTML = `<li class="p-4 text-center text-xs text-slate-400">Siswa tidak ditemukan</li>`;
+                return;
+            }
+
+            list.forEach(student => {
+                const badgeColor = 
+                    student.program === 'Coding' ? 'bg-blue-100 text-blue-700' :
+                    student.program === 'Robotics' ? 'bg-emerald-100 text-emerald-700' :
+                    'bg-purple-100 text-purple-700';
+
+                const li = document.createElement('li');
+                li.className = "p-2.5 hover:bg-indigo-50/80 rounded-xl cursor-pointer transition flex items-center justify-between";
+                li.onclick = () => selectStudent(student);
+                li.innerHTML = `
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">${student.nama}</p>
+                        <p class="text-[11px] text-slate-500">${student.id} • ${student.level || 'Reguler'}</p>
+                    </div>
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg ${badgeColor}">
+                        ${student.program}
+                    </span>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        function toggleStudentDropdown() {
+            const menu = document.getElementById('studentDropdownMenu');
+            menu.classList.toggle('hidden');
+            if (!menu.classList.contains('hidden')) {
+                document.getElementById('studentSearchInput').focus();
+            }
+        }
+
+        function filterStudents() {
+            const query = document.getElementById('studentSearchInput').value.toLowerCase();
+            const filtered = studentsData.filter(s => 
+                s.nama.toLowerCase().includes(query) || 
+                s.program.toLowerCase().includes(query) ||
+                (s.level && s.level.toLowerCase().includes(query))
+            );
+            renderStudentDropdown(filtered);
+        }
+
+        function selectStudent(student) {
+            document.getElementById('selectedStudentId').value = student.id;
+            const nameEl = document.getElementById('selectedStudentName');
+            nameEl.textContent = student.nama;
+            nameEl.className = "font-semibold text-slate-800";
+
+            const progEl = document.getElementById('selectedStudentProgram');
+            progEl.textContent = `(${student.level || student.program})`;
+            progEl.classList.remove('hidden');
+
+            document.getElementById('studentDropdownMenu').classList.add('hidden');
+            document.getElementById('studentSearchInput').value = "";
+            renderStudentDropdown(studentsData);
+        }
+
+        // Submit Form ke Google Sheets
+        document.getElementById('attendanceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const studentId = document.getElementById('selectedStudentId').value;
+            if (!studentId) {
+                showToast("Silakan pilih nama siswa terlebih dahulu!", "error");
+                toggleStudentDropdown();
+                return;
+            }
+
+            const studentObj = studentsData.find(s => s.id === studentId);
+            const status = "Hadir";
+            const program = studentObj ? (studentObj.program || "-") : "-";
+            const topik = document.getElementById('topikInput').value.trim();
+            const catatan = document.getElementById('catatanInput').value.trim();
+            const tanggal = document.getElementById('tanggalInput').value;
+            const mentor = document.getElementById('mentorInput').value.trim();
+
+            const payload = {
+                tanggal: tanggal,
+                idSiswa: studentId,
+                namaSiswa: studentObj ? studentObj.nama : "Unknown",
+                program: program,
+                status: status,
+                materi: topik || '-',
+                catatan: catatan || '-',
+                mentor: mentor
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Menyimpan ke Sheet...</span>`;
+            lucide.createIcons();
+
+            try {
+                if (isConfigured) {
+                    // Mengirim ke Google Apps Script menggunakan mode no-cors / text/plain agar terhindar dari preflight CORS block
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // Simulasi delay jaringan di mode demo
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                }
+
+                // Tambahkan ke log tampilan UI
+                addLogToUI(payload);
+                showToast(isConfigured ? "Presensi tersimpan ke Google Sheets!" : "Tersimpan (Mode Demo)", "success");
+
+                // Reset sebagian form (biarkan tanggal & nama mentor tetap terisi agar mudah input siswa berikutnya)
+                document.getElementById('selectedStudentId').value = "";
+                document.getElementById('selectedStudentName').textContent = "-- Pilih Nama Siswa --";
+                document.getElementById('selectedStudentName').className = "font-medium text-slate-500";
+                document.getElementById('selectedStudentProgram').classList.add('hidden');
+                document.getElementById('topikInput').value = "";
+                document.getElementById('catatanInput').value = "";
+                document.querySelector('input[name="status"][value="Hadir"]').checked = true;
+
+            } catch (error) {
+                console.error("Submit error:", error);
+                showToast("Terjadi kesalahan saat mengirim data.", "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+                lucide.createIcons();
+            }
+        });
+
+        function addLogToUI(data) {
+            sessionLogs.unshift(data);
+            document.getElementById('statTercatat').textContent = sessionLogs.length;
+
+            const container = document.getElementById('recentLogsContainer');
+            const emptyState = document.getElementById('emptyLogState');
+            if (emptyState) emptyState.remove();
+
+            const statusBadge = 
+                data.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700' :
+                data.status === 'Izin' ? 'bg-amber-100 text-amber-700' :
+                data.status === 'Sakit' ? 'bg-sky-100 text-sky-700' :
+                'bg-rose-100 text-rose-700';
+
+            const card = document.createElement('div');
+            card.className = "p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 transition-all";
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">${data.program}</span>
+                        <h4 class="text-sm font-bold text-slate-800 leading-snug">${data.namaSiswa}</h4>
+                    </div>
+                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${statusBadge}">
+                        ${data.status}
+                    </span>
+                </div>
+                <div class="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100">
+                    <p class="font-medium text-slate-800"><span class="text-slate-400 font-normal">Materi:</span> ${data.materi}</p>
+                    ${data.catatan !== '-' ? `<p class="text-slate-500 mt-1 text-[11px]">"${data.catatan}"</p>` : ''}
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                    <span>Mentor: ${data.mentor}</span>
+                    <span>${data.tanggal}</span>
+                </div>
+            `;
+
+            container.prepend(card);
+        }
+
+        // Modal & Utility Functions
+        function toggleSetupModal() {
+            document.getElementById('setupModal').classList.toggle('hidden');
+        }
+
+        function copyAppsScript() {
+            const codeText = document.getElementById('appsScriptCode').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Kode Google Apps Script berhasil disalin!", "success");
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const content = document.getElementById('toastContent');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+            if (type === "error") {
+                content.className = "flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-medium bg-rose-600";
+                icon.setAttribute('data-lucide', 'alert-circle');
+            } else {
+                content.className = "flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-medium bg-slate-900 border border-slate-700";
+                icon.setAttribute('data-lucide', 'check-circle-2');
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

@@ -306,7 +306,7 @@
 
                     <!-- Checkbox Filter Berdasarkan Program Terpilih -->
                     <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-white px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                        <input type="checkbox" id="filterByProgram" onchange="renderStudentList()" class="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500">
+                        <input type="checkbox" id="filterByProgram" onchange="renderStudentList()" class="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500" checked>
                         <span>Hanya siswa program terpilih</span>
                     </label>
                 </div>
@@ -583,21 +583,21 @@ function doPost(e) {
 
         // 15 Daftar Program Ajar Default Xpert Academy (Coding, Robotics, STEAM)
         const DEFAULT_PROGRAMS = [
-            { id: 1,  name: "Scratch Jr (Creative Coding)", category: "Coding" },
-            { id: 2,  name: "Scratch 3.0 Game & Animation", category: "Coding" },
-            { id: 3,  name: "Python Basic & Logic", category: "Coding" },
-            { id: 4,  name: "Web Dev (HTML, CSS & JS)", category: "Coding" },
-            { id: 5,  name: "Roblox Studio & Lua Scripting", category: "Coding" },
-            { id: 6,  name: "Mobile App (MIT App Inventor)", category: "Coding" },
-            { id: 7,  name: "Arduino Basic & Microcontroller", category: "Robotics" },
-            { id: 8,  name: "LEGO Education SPIKE Prime", category: "Robotics" },
-            { id: 9,  name: "Micro:bit & Smart IoT", category: "Robotics" },
-            { id: 10, name: "VEX Robotics Engineering", category: "Robotics" },
-            { id: 11, name: "3D Printing & Tinkercad Design", category: "STEAM" },
-            { id: 12, name: "Electronics & Smart Circuit", category: "STEAM" },
-            { id: 13, name: "Game Design with Unity 2D/3D", category: "Coding" },
-            { id: 14, name: "AI & Machine Learning for Kids", category: "STEAM" },
-            { id: 15, name: "STEM Science & Engineering Lab", category: "STEAM" }
+            { id: 1,  name: "Coding Grade 1 & 2", category: "Coding" },
+            { id: 2,  name: "Coding Grade 3", category: "Coding" },
+            { id: 3,  name: "Coding Grade 4", category: "Coding" },
+            { id: 4,  name: "Coding Grade 5", category: "Coding" },
+            { id: 5,  name: "Coding Grade 6", category: "Coding" },
+            { id: 6,  name: "Robotics Grade 1", category: "Robotics" },
+            { id: 7,  name: "Robotics Grade 2", category: "Robotics" },
+            { id: 8,  name: "Robotics Grade 2 & 3", category: "Robotics" },
+            { id: 9,  name: "Robotics Grade 4 & 5", category: "Robotics" },
+            { id: 10, name: "STEAM Grade 1", category: "STEAM" },
+            { id: 11, name: "STEAM Grade 2", category: "STEAM" },
+            { id: 12, name: "STEAM Grade 3", category: "STEAM" },
+            { id: 13, name: "STEAM Grade 4", category: "STEAM" },
+            { id: 14, name: "STEAM Grade 5", category: "STEAM" },
+            { id: 15, name: "STEAM Grade 6", category: "STEAM" }
         ];
 
         // Data Dummy Siswa Xpert Academy (Digunakan otomatis saat Mode Demo / Offline)

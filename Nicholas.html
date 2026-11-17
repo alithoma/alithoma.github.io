@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XPERT ACADEMY - Sistem Presensi Siswa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Animasi halus untuk transisi */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- =====================================================================
+         KONFIGURASI UTAMA (EDIT BAGIAN INI SESUAI KEBUTUHAN ANDA)
+         ===================================================================== -->
+    <script>
+        const CONFIG = {
+            // [BARIS 52] Ubah password login di bawah ini sesuai keinginan Anda
+            ADMIN_PASSWORD: "xpert2026", 
+
+            // [BARIS 55] Masukkan URL Web App dari Google Apps Script Anda di sini
+            GOOGLE_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby6lZRzsX8B3rmioznrGPvMqVJejquTnbJ3nAFgP_eX38mAr3jhKQFs7qHzqZas3tPVlA/exec",
+
+            // Nama Akademi
+            ACADEMY_NAME: "XPERT ACADEMY",
+
+            // Daftar 12 Program Ajar (Coding, Robotics, STEAM)
+            PROGRAMS: [
+                { id: "r1", category: "Robotics", name: "Robotics Grade 1 - 3" },
+                { id: "r2", category: "Robotics", name: "Robotics Grade 4 - 6" },
+                { id: "r3", category: "Robotics", name: "Robotics Grade 7 - 9" },
+                { id: "r4", category: "Robotics", name: "Robotics Grade 10 - 12" },
+                { id: "c1", category: "Coding", name: "Coding 1" },
+                { id: "c2", category: "Coding", name: "Coding 2" },
+                { id: "c3", category: "Coding", name: "Coding 3" },
+                { id: "c4", category: "Coding", name: "Coding 4" },
+                { id: "s1", category: "STEAM", name: "STEAM 1" },
+                { id: "s2", category: "STEAM", name: "STEAM 2" },
+                { id: "s3", category: "STEAM", name: "STEAM 3" },
+                { id: "s4", category: "STEAM", name: "STEAM 4" }
+            ]
+        };
+    </script>
+    <!-- ===================================================================== -->
+
+
+    <!-- NOTIFIKASI TOAST / MESSAGE BOX (Pengganti alert) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- HALAMAN 1: LOGIN SCREEN -->
+    <div id="login-screen" class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+        <div class="bg-white/95 backdrop-blur-md w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-white/20 fade-in">
+            <div class="p-8 sm:p-10">
+                <!-- Logo & Header -->
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 mb-4">
+                        <i class="fa-solid fa-robot text-3xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">XPERT ACADEMY</h1>
+                    <p class="text-sm text-slate-500 mt-1 font-medium">Coding • Robotics • STEAM</p>
+                </div>
+
+                <!-- Form Login -->
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label for="password-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                            Password Instruktur / Admin
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <input type="password" id="password-input" required
+                                class="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
+                                placeholder="Masukkan password akses...">
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                                <i class="fa-solid fa-eye" id="eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                        class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+                        <span>Masuk ke Sistem Presensi</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-400">
+                        &copy; <span id="login-year"></span> XPERT ACADEMY Attendance Portal
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- HALAMAN 2: DASHBOARD UTAMA PRESENSI -->
+    <div id="app-screen" class="hidden flex-grow flex flex-col">
+        
+        <!-- Navbar -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-microchip text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-lg leading-tight">XPERT ACADEMY</h1>
+                        <p class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Portal Presensi Siswa</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <!-- Tanggal Otomatis Badge -->
+                    <div class="hidden sm:flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200/80">
+                        <i class="fa-regular fa-calendar-check text-indigo-600"></i>
+                        <span id="header-date" class="text-xs font-semibold text-slate-700">Memuat tanggal...</span>
+                    </div>
+
+                    <!-- Tombol Keluar -->
+                    <button id="logout-btn" class="p-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium" title="Keluar">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="hidden md:inline">Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Konten Utama -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+            
+            <!-- Banner Tanggal Mobile -->
+            <div class="sm:hidden bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center justify-between">
+                <span class="text-xs font-medium text-indigo-800">Tanggal Presensi:</span>
+                <span id="mobile-date" class="text-xs font-bold text-indigo-950"></span>
+            </div>
+
+            <!-- Panel Kontrol & Pemilihan Program -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-end">
+                    
+                    <!-- 1. Tanggal Presensi (Otomatis hari ini, dapat disesuaikan) -->
+                    <div class="lg:col-span-3">
+                        <label for="attendance-date-input" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                            1. Tanggal Presensi
+                        </label>
+                        <div class="relative">
+                            <input type="date" id="attendance-date-input" 
+                                class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 block p-3 font-medium transition-all">
+                        </div>
+                    </div>
+
+                    <!-- 2. Pilih Program Ajar -->
+                    <div class="lg:col-span-4">
+                        <label for="program-select" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                            2. Program Ajar
+                        </label>
+                        <div class="relative">
+                            <select id="program-select" class="w-full appearance-none bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 block p-3 pr-10 font-medium transition-all">
+                                <!-- Diisi via JavaScript -->
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Materi Ajar -->
+                    <div class="lg:col-span-3">
+                        <label for="material-input" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                            3. Materi Ajar Hari Ini
+                        </label>
+                        <input type="text" id="material-input" placeholder="Contoh: S4A - Lesson 1 Spur Gear Transmission" 
+                            class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 p-3 font-medium transition-all">
+                    </div>
+
+                    <!-- 4. Nama Pengajar & Tombol Refresh -->
+                    <div class="lg:col-span-2 flex gap-2">
+                        <div class="flex-grow">
+                            <label for="instructor-input" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                4. Pengajar
+                            </label>
+                            <input type="text" id="instructor-input" placeholder="Ali Thomas" 
+                                class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 p-3 font-medium">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" id="refresh-students-btn" title="Muat Ulang Data Siswa dari Google Sheet"
+                                class="p-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all">
+                                <i class="fa-solid fa-rotate" id="refresh-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peringatan Konfigurasi URL jika belum diubah -->
+                <div id="config-warning" class="hidden mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+                    <div class="text-xs text-amber-800">
+                        <p class="font-bold">Mode Simulasi / URL Google Sheet Belum Diatur</p>
+                        <p class="mt-0.5">Anda sedang melihat data siswa contoh. Silakan masukkan URL Google Apps Script Anda pada <strong>baris ke-55</strong> di dalam kode program untuk menghubungkan ke Google Sheet asli.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistik Ringkas & Aksi Massal -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-medium text-slate-500">Total Siswa</p>
+                    <p id="stat-total" class="text-2xl font-extrabold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/80">
+                    <p class="text-xs font-semibold text-emerald-700">Hadir</p>
+                    <p id="stat-hadir" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p>
+                </div>
+                <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80">
+                    <p class="text-xs font-semibold text-amber-700">Izin / Sakit</p>
+                    <p id="stat-izin" class="text-2xl font-extrabold text-amber-600 mt-1">0</p>
+                </div>
+                <div class="bg-rose-50/70 p-4 rounded-2xl border border-rose-200/80">
+                    <p class="text-xs font-semibold text-rose-700">Alpha</p>
+                    <p id="stat-alpha" class="text-2xl font-extrabold text-rose-600 mt-1">0</p>
+                </div>
+                <div class="col-span-2 sm:col-span-1 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                    <button type="button" id="mark-all-present-btn" class="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Hadir Semua</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daftar Siswa & Form Presensi -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Header Tabel & Pencarian -->
+                <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                            <span>Daftar Siswa Terdaftar</span>
+                            <span id="active-program-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Semua Program</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Pilih status kehadiran dan tambahkan catatan materi/perkembangan jika diperlukan.</p>
+                    </div>
+
+                    <!-- Pencarian Siswa -->
+                    <div class="relative w-full sm:w-64">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </div>
+                        <input type="text" id="search-student" placeholder="Cari nama atau ID siswa..." 
+                            class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="p-12 text-center hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-3"></div>
+                    <p class="text-sm font-medium text-slate-600">Mengambil data siswa dari Google Sheet...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="p-12 text-center hidden">
+                    <div class="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fa-solid fa-users-slash text-xl"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800">Tidak ada siswa ditemukan</h3>
+                    <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Tidak ada siswa yang terdaftar pada program ajar ini atau kata kunci pencarian tidak cocok.</p>
+                </div>
+
+                <!-- Tabel Siswa (Desktop) & Kartu (Mobile) -->
+                <div id="student-list-container" class="divide-y divide-slate-100">
+                    <!-- Diisi secara dinamis oleh JavaScript -->
+                </div>
+
+                <!-- Footer Simpan Presensi -->
+                <div class="p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-xs text-slate-500 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-base"></i>
+                        <span>Data akan disimpan otomatis ke tab <strong>Presensi</strong> di Google Sheet.</span>
+                    </div>
+
+                    <button type="button" id="submit-attendance-btn" 
+                        class="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Simpan Presensi Sekarang</span>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL KONFIRMASI / HASIL SIMPAN -->
+    <div id="result-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl fade-in text-center">
+            <div id="modal-icon" class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 id="modal-title" class="text-xl font-bold text-slate-900">Presensi Berhasil Disimpan!</h3>
+            <p id="modal-desc" class="text-sm text-slate-600 mt-2">Data kehadiran siswa untuk tanggal hari ini telah berhasil dikirim ke Google Sheet.</p>
+            <div class="mt-6">
+                <button type="button" id="close-modal-btn" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-colors">
+                    Selesai & Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         LOGIKA APLIKASI (JAVASCRIPT)
+         ===================================================================== -->
+    <script>
+        // State Aplikasi
+        let allStudents = [];
+        let filteredStudents = [];
+        let attendanceRecords = {}; // { studentId: { status: 'Hadir', note: '' } }
+        let formattedDateToday = '';
+        let isoDateToday = '';
+
+        // Data Dummy Fallback (Digunakan jika Google Sheet URL belum diisi)
+        const MOCK_STUDENTS = [
+            { id: "XA-001", name: "Alvaro Pratama", program: "Scratch Junior & Visual Coding" },
+            { id: "XA-002", name: "Nayla Putri Wijaya", program: "Scratch Junior & Visual Coding" },
+            { id: "XA-003", name: "Raffasya Kenzie", program: "Python Programming for Kids & Teens" },
+            { id: "XA-004", name: "Clarissa Aurelia", program: "Web Development (HTML, CSS, JS)" },
+            { id: "XA-005", name: "Muhammad Zidan", program: "Game Development with Roblox / Unity" },
+            { id: "XA-006", name: "Keisha Azzahra", program: "Basic Electronics & Micro:bit" },
+            { id: "XA-007", name: "Gavin Alexander", program: "Arduino Robotics & Sensors" },
+            { id: "XA-008", name: "Bintang Ramadhan", program: "LEGO Spike / Mindstorms Robotics" },
+            { id: "XA-009", name: "Salsabila Khairunnisa", program: "IoT (Internet of Things) Smart Devices" },
+            { id: "XA-010", name: "Darren Tanuwijaya", program: "3D Design & 3D Printing Modeling" },
+            { id: "XA-011", name: "Aisyah Humaira", program: "Artificial Intelligence (AI) & Machine Learning" },
+            { id: "XA-012", name: "Kiano Mahendra", program: "Creative Digital Art & Animation" },
+            { id: "XA-013", name: "Felicia Gunawan", program: "Science & Engineering Lab Explorers" },
+            { id: "XA-014", name: "Arka Wiratama", program: "Arduino Robotics & Sensors" }
+        ];
+
+        // Inisialisasi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            initDate();
+            initProgramDropdown();
+            setupEventListeners();
+            document.getElementById('login-year').textContent = new Date().getFullYear();
+
+            // Cek apakah URL Google Script sudah dikonfigurasi
+            if (CONFIG.GOOGLE_SCRIPT_URL.includes("GANTI_DENGAN_ID_SCRIPT_ANDA") || CONFIG.GOOGLE_SCRIPT_URL === "") {
+                document.getElementById('config-warning').classList.remove('hidden');
+            }
+        });
+
+        // 1. Mengatur Tanggal Otomatis Sesuai Waktu Akses Web App
+        function initDate() {
+            const now = new Date();
+            
+            // Format YYYY-MM-DD untuk input date & database
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            isoDateToday = `${year}-${month}-${day}`;
+
+            const dateInput = document.getElementById('attendance-date-input');
+            if (dateInput) {
+                dateInput.value = isoDateToday;
+            }
+
+            updateDateDisplay(isoDateToday);
+        }
+
+        // Memperbarui tampilan teks tanggal di header & mobile
+        function updateDateDisplay(isoDateStr) {
+            if (!isoDateStr) return;
+            const [y, m, d] = isoDateStr.split('-');
+            const dateObj = new Date(y, m - 1, d);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            formattedDateToday = dateObj.toLocaleDateString('id-ID', options);
+            isoDateToday = isoDateStr;
+
+            document.getElementById('header-date').textContent = formattedDateToday;
+            document.getElementById('mobile-date').textContent = formattedDateToday;
+        }
+
+        // 2. Mengisi Dropdown 12 Program Ajar
+        function initProgramDropdown() {
+            const select = document.getElementById('program-select');
+            select.innerHTML = '';
+
+            // Opsi Tampilkan Semua
+            const allOption = document.createElement('option');
+            allOption.value = "ALL";
+            allOption.textContent = "Semua Program Ajar)";
+            select.appendChild(allOption);
+
+            // Kelompokkan berdasarkan kategori
+            const categories = ["Coding", "Robotics", "STEAM"];
+            categories.forEach(cat => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = `--- Bidang ${cat} ---`;
+
+                const progs = CONFIG.PROGRAMS.filter(p => p.category === cat);
+                progs.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.textContent = `[${p.category}] ${p.name}`;
+                    optgroup.appendChild(opt);
+                });
+
+                select.appendChild(optgroup);
+            });
+        }
+
+        // 3. Setup Event Listeners
+        function setupEventListeners() {
+            // Toggle Show/Hide Password
+            document.getElementById('toggle-password').addEventListener('click', () => {
+                const pwdInput = document.getElementById('password-input');
+                const eyeIcon = document.getElementById('eye-icon');
+                if (pwdInput.type === 'password') {
+                    pwdInput.type = 'text';
+                    eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    pwdInput.type = 'password';
+                    eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            });
+
+            // Submit Login
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inputPwd = document.getElementById('password-input').value;
+                if (inputPwd === CONFIG.ADMIN_PASSWORD) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('app-screen').classList.remove('hidden');
+                    showToast('Login berhasil! Selamat datang di Xpert Academy.', 'success');
+                    fetchStudentsFromSheet();
+                } else {
+                    showToast('Password salah! Silakan periksa kembali.', 'error');
+                    document.getElementById('password-input').value = '';
+                    document.getElementById('password-input').focus();
+                }
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('password-input').value = '';
+            });
+
+            // Perubahan Input Tanggal Presensi
+            document.getElementById('attendance-date-input').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    updateDateDisplay(e.target.value);
+                }
+            });
+
+            // Perubahan Dropdown Program
+            document.getElementById('program-select').addEventListener('change', () => {
+                filterAndRenderStudents();
+            });
+
+            // Pencarian Siswa
+            document.getElementById('search-student').addEventListener('input', () => {
+                filterAndRenderStudents();
+            });
+
+            // Refresh Data Siswa
+            document.getElementById('refresh-students-btn').addEventListener('click', () => {
+                fetchStudentsFromSheet();
+            });
+
+            // Tombol Hadir Semua
+            document.getElementById('mark-all-present-btn').addEventListener('click', () => {
+                filteredStudents.forEach(student => {
+                    if (!attendanceRecords[student.id]) {
+                        attendanceRecords[student.id] = { status: 'Hadir', note: '' };
+                    } else {
+                        attendanceRecords[student.id].status = 'Hadir';
+                    }
+                });
+                renderStudentList();
+                updateStats();
+                showToast('Semua siswa yang tampil ditandai Hadir.', 'info');
+            });
+
+            // Submit Presensi ke Google Sheet
+            document.getElementById('submit-attendance-btn').addEventListener('click', submitAttendanceToSheet);
+
+            // Tutup Modal
+            document.getElementById('close-modal-btn').addEventListener('click', () => {
+                document.getElementById('result-modal').classList.add('hidden');
+            });
+        }
+
+        // 4. Mengambil Data Siswa dari Google Sheet
+        async function fetchStudentsFromSheet() {
+            const loadingEl = document.getElementById('loading-state');
+            const listContainer = document.getElementById('student-list-container');
+            const emptyEl = document.getElementById('empty-state');
+            const refreshIcon = document.getElementById('refresh-icon');
+
+            loadingEl.classList.remove('hidden');
+            listContainer.innerHTML = '';
+            emptyEl.classList.add('hidden');
+            refreshIcon.classList.add('fa-spin');
+
+            // Jika URL belum diatur, gunakan data simulasi
+            if (CONFIG.GOOGLE_SCRIPT_URL.includes("GANTI_DENGAN_ID_SCRIPT_ANDA") || CONFIG.GOOGLE_SCRIPT_URL === "") {
+                setTimeout(() => {
+                    allStudents = [...MOCK_STUDENTS];
+                    initAttendanceRecords(allStudents);
+                    loadingEl.classList.add('hidden');
+                    refreshIcon.classList.remove('fa-spin');
+                    filterAndRenderStudents();
+                }, 600);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getStudents`);
+                const result = await response.json();
+
+                if (result.status === 'success' && Array.isArray(result.data)) {
+                    allStudents = result.data;
+                    initAttendanceRecords(allStudents);
+                    showToast(`Berhasil memuat ${allStudents.length} data siswa dari Google Sheet.`, 'success');
+                } else {
+                    throw new Error(result.message || 'Format data tidak sesuai');
+                }
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                showToast('Gagal mengambil data dari Google Sheet. Menggunakan data cadangan.', 'error');
+                allStudents = [...MOCK_STUDENTS];
+                initAttendanceRecords(allStudents);
+            } finally {
+                loadingEl.classList.add('hidden');
+                refreshIcon.classList.remove('fa-spin');
+                filterAndRenderStudents();
+            }
+        }
+
+        // Inisialisasi status default kehadiran ('Hadir')
+        function initAttendanceRecords(students) {
+            students.forEach(s => {
+                if (!attendanceRecords[s.id]) {
+                    attendanceRecords[s.id] = { status: 'Hadir', note: '' };
+                }
+            });
+        }
+
+        // 5. Filter & Render Daftar Siswa
+        function filterAndRenderStudents() {
+            const selectedProgram = document.getElementById('program-select').value;
+            const searchQuery = document.getElementById('search-student').value.toLowerCase().trim();
+            const badge = document.getElementById('active-program-badge');
+
+            badge.textContent = selectedProgram === 'ALL' ? 'Semua Program' : selectedProgram;
+
+            filteredStudents = allStudents.filter(student => {
+                // Filter berdasarkan dropdown program spesifik
+                const matchProgram = (selectedProgram === 'ALL') || (student.program === selectedProgram);
+
+                // Filter pencarian nama / ID
+                const matchSearch = student.name.toLowerCase().includes(searchQuery) || 
+                                    student.id.toLowerCase().includes(searchQuery);
+
+                return matchProgram && matchSearch;
+            });
+
+            renderStudentList();
+            updateStats();
+        }
+
+        // Render DOM untuk setiap siswa
+        function renderStudentList() {
+            const container = document.getElementById('student-list-container');
+            const emptyEl = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (filteredStudents.length === 0) {
+                emptyEl.classList.remove('hidden');
+                return;
+            } else {
+                emptyEl.classList.add('hidden');
+            }
+
+            filteredStudents.forEach((student, index) => {
+                const record = attendanceRecords[student.id] || { status: 'Hadir', note: '' };
+                const progObj = CONFIG.PROGRAMS.find(p => p.name === student.program);
+                const category = progObj ? progObj.category : 'Umum';
+
+                // Warna badge kategori
+                let catBadgeColor = "bg-slate-100 text-slate-700";
+                if (category === 'Coding') catBadgeColor = "bg-blue-100 text-blue-700";
+                if (category === 'Robotics') catBadgeColor = "bg-purple-100 text-purple-700";
+                if (category === 'STEAM') catBadgeColor = "bg-teal-100 text-teal-700";
+
+                const row = document.createElement('div');
+                row.className = "p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4";
+
+                row.innerHTML = `
+                    <!-- Info Siswa -->
+                    <div class="flex items-start sm:items-center gap-3.5 lg:w-5/12">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
+                            ${student.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base">${student.name}</h4>
+                                <span class="text-[11px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">${student.id}</span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${catBadgeColor}">${category}</span>
+                                <span class="text-xs text-slate-500 font-medium">${student.program}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pilihan Status Kehadiran -->
+                    <div class="flex flex-wrap items-center gap-2 lg:w-4/12">
+                        ${['Hadir', 'Izin', 'Sakit', 'Alpha'].map(statusOption => {
+                            const isSelected = record.status === statusOption;
+                            let activeClass = "";
+                            if (isSelected) {
+                                if (statusOption === 'Hadir') activeClass = "bg-emerald-600 text-white border-emerald-600 shadow-sm";
+                                if (statusOption === 'Izin') activeClass = "bg-amber-500 text-white border-amber-500 shadow-sm";
+                                if (statusOption === 'Sakit') activeClass = "bg-sky-500 text-white border-sky-500 shadow-sm";
+                                if (statusOption === 'Alpha') activeClass = "bg-rose-600 text-white border-rose-600 shadow-sm";
+                            } else {
+                                activeClass = "bg-white text-slate-600 border-slate-200 hover:bg-slate-100";
+                            }
+
+                            return `
+                                <button type="button" 
+                                    onclick="setAttendanceStatus('${student.id}', '${statusOption}')"
+                                    class="flex-1 sm:flex-none py-2 px-3.5 text-xs font-semibold rounded-xl border transition-all ${activeClass}">
+                                    ${statusOption}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Input Catatan -->
+                    <div class="lg:w-3/12">
+                        <input type="text" 
+                            value="${record.note || ''}"
+                            onchange="setAttendanceNote('${student.id}', this.value)"
+                            placeholder="Catatan / keterangan..." 
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all">
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Update Status Kehadiran per Siswa
+        window.setAttendanceStatus = function(studentId, status) {
+            if (!attendanceRecords[studentId]) attendanceRecords[studentId] = { status: 'Hadir', note: '' };
+            attendanceRecords[studentId].status = status;
+            renderStudentList();
+            updateStats();
+        };
+
+        // Update Catatan per Siswa
+        window.setAttendanceNote = function(studentId, note) {
+            if (!attendanceRecords[studentId]) attendanceRecords[studentId] = { status: 'Hadir', note: '' };
+            attendanceRecords[studentId].note = note;
+        };
+
+        // Update Angka Statistik
+        function updateStats() {
+            let hadir = 0, izin = 0, alpha = 0;
+            filteredStudents.forEach(s => {
+                const st = attendanceRecords[s.id]?.status || 'Hadir';
+                if (st === 'Hadir') hadir++;
+                else if (st === 'Izin' || st === 'Sakit') izin++;
+                else if (st === 'Alpha') alpha++;
+            });
+
+            document.getElementById('stat-total').textContent = filteredStudents.length;
+            document.getElementById('stat-hadir').textContent = hadir;
+            document.getElementById('stat-izin').textContent = izin;
+            document.getElementById('stat-alpha').textContent = alpha;
+        }
+
+        // 6. Mengirim Data Presensi ke Google Sheet
+        async function submitAttendanceToSheet() {
+            if (filteredStudents.length === 0) {
+                showToast('Tidak ada daftar siswa untuk disimpan.', 'error');
+                return;
+            }
+
+            const dateValue = document.getElementById('attendance-date-input').value;
+            if (!dateValue) {
+                showToast('Silakan pilih tanggal presensi terlebih dahulu.', 'error');
+                return;
+            }
+
+            const materialTopic = document.getElementById('material-input').value.trim() || '-';
+            const instructorName = document.getElementById('instructor-input').value.trim() || 'Admin / Instruktur';
+            const btn = document.getElementById('submit-attendance-btn');
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menyimpan ke Google Sheet...</span>`;
+
+            // Siapkan payload data yang akan dikirim
+            const payload = {
+                action: 'saveAttendance',
+                date: dateValue,
+                formattedDate: formattedDateToday,
+                material: materialTopic,
+                instructor: instructorName,
+                records: filteredStudents.map(student => ({
+                    studentId: student.id,
+                    studentName: student.name,
+                    program: student.program,
+                    status: attendanceRecords[student.id]?.status || 'Hadir',
+                    note: attendanceRecords[student.id]?.note || '-'
+                }))
+            };
+
+            // Jika masih menggunakan URL placeholder (Simulasi)
+            if (CONFIG.GOOGLE_SCRIPT_URL.includes("GANTI_DENGAN_ID_SCRIPT_ANDA") || CONFIG.GOOGLE_SCRIPT_URL === "") {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    showResultModal(
+                        true, 
+                        "Simulasi Berhasil!", 
+                        `Sebanyak ${payload.records.length} data presensi tanggal ${formattedDateToday} (Materi: ${materialTopic}) siap disimpan. Masukkan URL Google Script Anda pada baris ke-55 untuk menyimpan secara nyata ke Google Sheet.`
+                    );
+                }, 800);
+                return;
+            }
+
+            try {
+                // Mengirim data menggunakan POST (mode no-cors / text/plain agar terhindar dari preflight CORS Google Apps Script)
+                const response = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showResultModal(
+                        true,
+                        "Presensi Berhasil Disimpan!",
+                        `Sebanyak ${payload.records.length} data kehadiran siswa pada ${formattedDateToday} telah tercatat di Google Sheet.`
+                    );
+                } else {
+                    throw new Error(result.message || 'Gagal menyimpan data.');
+                }
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                showResultModal(
+                    false,
+                    "Gagal Menyimpan Data",
+                    "Terjadi kesalahan koneksi ke Google Sheet. Pastikan URL Web App sudah benar dan akses diset ke 'Anyone' (Siapa saja)."
+                );
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Menampilkan Modal Hasil
+        function showResultModal(isSuccess, title, desc) {
+            const modal = document.getElementById('result-modal');
+            const icon = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+
+            if (isSuccess) {
+                icon.className = "w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-3xl";
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                icon.className = "w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 text-3xl";
+                icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            }
+
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+            modal.classList.remove('hidden');
+        }
+
+        // Menampilkan Notifikasi Toast
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-slate-800 text-white";
+            let iconClass = "fa-circle-info text-indigo-400";
+
+            if (type === 'success') {
+                bgClass = "bg-emerald-900 text-white border border-emerald-700";
+                iconClass = "fa-circle-check text-emerald-400";
+            } else if (type === 'error') {
+                bgClass = "bg-rose-900 text-white border border-rose-700";
+                iconClass = "fa-circle-exclamation text-rose-400";
+            }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-medium pointer-events-auto fade-in`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-base"></i>
+                <span class="flex-grow">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

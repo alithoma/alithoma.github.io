@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Presensi Siswa - XPERT ACADEMY</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1, h2, h3, .brand-font {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Custom Scrollbar untuk tampilan mobile yang bersih */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* Animasi Transisi Halus */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center bg-slate-200 text-slate-800">
+
+    <!-- Container Utama Menyerupai Layar Smartphone pada Desktop, Full pada HP -->
+    <div class="w-full max-w-md bg-slate-50 min-h-screen shadow-2xl relative flex flex-col overflow-hidden">
+
+        <!-- ===================================================================== -->
+        <!-- HALAMAN 1: LOGIN SCREEN -->
+        <!-- ===================================================================== -->
+        <div id="login-screen" class="flex-1 flex flex-col justify-between p-6 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white z-20">
+            <div class="mt-8 text-center">
+                <div class="w-20 h-20 bg-white/10 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center border border-white/20 shadow-xl mb-5">
+                    <i class="fa-solid fa-robot text-4xl text-cyan-400"></i>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-semibold tracking-wider uppercase border border-cyan-400/30">
+                    Coding • Robotics • STEAM
+                </span>
+                <h1 class="text-3xl font-extrabold mt-3 tracking-tight text-white">XPERT ACADEMY</h1>
+                <p class="text-blue-200 text-sm mt-1">Sistem Presensi Digital Pengajar</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-3xl border border-white/15 shadow-xl my-auto">
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="password-input" class="block text-xs font-medium text-blue-200 uppercase tracking-wider mb-2">
+                            Kata Sandi Akses
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-blue-300">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            <input type="password" id="password-input" required placeholder="Masukkan password..."
+                                class="w-full pl-11 pr-12 py-3.5 bg-slate-900/60 border border-white/20 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all">
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-white">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="hidden text-rose-300 text-xs bg-rose-500/20 border border-rose-500/30 p-3 rounded-xl flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>Password salah! Silakan coba lagi.</span>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-3.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <span>Masuk ke Aplikasi</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div class="text-center text-xs text-blue-300/60 pb-2">
+                &copy; 2026 XPERT ACADEMY. All rights reserved.
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- HALAMAN 2: APLIKASI UTAMA (PRESENSI) -->
+        <!-- ===================================================================== -->
+        <div id="app-screen" class="hidden flex-1 flex flex-col h-screen">
+            
+            <!-- Top App Bar -->
+            <header class="bg-gradient-to-r from-indigo-900 to-blue-800 text-white px-5 pt-6 pb-5 rounded-b-3xl shadow-md z-10">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+                            <i class="fa-solid fa-microchip text-cyan-300 text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg leading-tight">XPERT ACADEMY</h2>
+                            <p class="text-xs text-blue-200 flex items-center gap-1.5" id="connection-status">
+                                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span>Memuat data...</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="refresh-data-btn" title="Muat Ulang Data Siswa" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition active:scale-95">
+                            <i class="fa-solid fa-rotate-right text-sm"></i>
+                        </button>
+                        <button id="logout-btn" title="Keluar" class="w-9 h-9 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 flex items-center justify-center transition active:scale-95">
+                            <i class="fa-solid fa-right-from-bracket text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Konten Utama (Scrollable) -->
+            <main class="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-28">
+                
+                <!-- Card Pengaturan Kelas & Tanggal -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3 fade-in">
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Input Tanggal -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tanggal</label>
+                            <div class="relative">
+                                <input type="date" id="attendance-date" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <!-- Input Nama Pengajar -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pengajar / Coach</label>
+                            <input type="text" id="teacher-name" placeholder="Ali Thomas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Pilihan 12 Program Ajar -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            Program Ajar (Coding • Robotics • STEAM)
+                        </label>
+                        <div class="relative">
+                            <select id="program-select" class="w-full pl-3 pr-9 py-2.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs font-bold text-blue-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Opsi diisi otomatis via JS -->
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Materi Ajar -->
+                    <div>
+                        <label for="teaching-material" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            Materi Ajar / Topik Pertemuan
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                <i class="fa-solid fa-book-open text-xs"></i>
+                            </span>
+                            <input type="text" id="teaching-material" placeholder="Contoh: S4A - Lesson 1 Spur Gear Transmission" 
+                                class="w-full pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Statistik Kehadiran -->
+                <div class="grid grid-cols-4 gap-2 fade-in">
+                    <div class="bg-white p-2.5 rounded-2xl border border-slate-100 text-center shadow-sm">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">Total</span>
+                        <span id="stat-total" class="text-base font-extrabold text-slate-700">0</span>
+                    </div>
+                    <div class="bg-emerald-50 p-2.5 rounded-2xl border border-emerald-100 text-center">
+                        <span class="block text-[10px] font-bold text-emerald-600 uppercase">Hadir</span>
+                        <span id="stat-hadir" class="text-base font-extrabold text-emerald-700">0</span>
+                    </div>
+                    <div class="bg-amber-50 p-2.5 rounded-2xl border border-amber-100 text-center">
+                        <span class="block text-[10px] font-bold text-amber-600 uppercase">Izin/Sakit</span>
+                        <span id="stat-izin" class="text-base font-extrabold text-amber-700">0</span>
+                    </div>
+                    <div class="bg-rose-50 p-2.5 rounded-2xl border border-rose-100 text-center">
+                        <span class="block text-[10px] font-bold text-rose-600 uppercase">Alpha</span>
+                        <span id="stat-alpha" class="text-base font-extrabold text-rose-700">0</span>
+                    </div>
+                </div>
+
+                <!-- Pencarian & Aksi Cepat -->
+                <div class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="search-student" placeholder="Cari nama siswa..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button id="mark-all-present" class="px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition whitespace-nowrap active:scale-95">
+                        <i class="fa-solid fa-check-double mr-1"></i> Hadir Semua
+                    </button>
+                </div>
+
+                <!-- Daftar Siswa -->
+                <div class="space-y-2.5" id="student-list-container">
+                    <!-- Kartu siswa akan dirender di sini -->
+                </div>
+
+            </main>
+
+            <!-- Bottom Floating Action Bar -->
+            <div class="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-slate-100 via-slate-100 to-transparent pt-6">
+                <button id="submit-attendance-btn" class="w-full py-3.5 px-5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Simpan Presensi ke Google Sheet</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- CUSTOM MODAL / TOAST NOTIFICATION (Pengganti Alert) -->
+        <!-- ===================================================================== -->
+        <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-5">
+            <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl transform transition-all scale-100">
+                <div id="modal-icon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 bg-emerald-100 text-emerald-600">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-extrabold text-slate-800">Berhasil!</h3>
+                <p id="modal-message" class="text-xs text-slate-500 mt-2 leading-relaxed">Data presensi telah berhasil disimpan ke Google Sheet.</p>
+                <button id="modal-close-btn" class="mt-5 w-full py-3 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SCRIPT LOGIKA APLIKASI & KONFIGURASI -->
+    <!-- ===================================================================== -->
+    <script>
+        /**
+         * =========================================================================
+         * PENGATURAN UTAMA (UBAH PASSWORD & URL GOOGLE SHEET DI SINI)
+         * =========================================================================
+         */
+        
+        // 1. PASSWORD LOGIN APLIKASI (Ubah teks di dalam tanda kutip di bawah ini - BARIS 199)
+        const APP_PASSWORD = "xpert2026"; 
+
+        // 2. URL WEB APP GOOGLE APPS SCRIPT (Tempel URL Google Sheet Anda di bawah ini - BARIS 202)
+        // Biarkan kosong ("") jika ingin mencoba mode simulasi/demo terlebih dahulu.
+        const GOOGLE_SHEET_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx0UWnNAj8Z1x92TYoizFN6iFeSXe9cmf2kAtPo_NEN32S_eBCT7bcruR0PlmNXNN_x/exec"; 
+
+        // 3. DAFTAR 12 PROGRAM AJAR XPERT ACADEMY (Coding, Robotics, STEAM)
+        const PROGRAMS = [
+            "Robotics Grade 3 - 11",
+            "Robotics 2",
+            "Robotics 3",
+            "Robotics 4",
+            "Coding 1",
+            "Coding 2",
+            "Coding 3",
+            "Coding 4",
+            "STEAM 1",
+            "STEAM 2",
+            "STEAM 3",
+            "STEAM 4"
+        ];
+
+        // Data Cadangan (Dummy) jika URL Google Sheet belum diisi
+        const FALLBACK_STUDENTS = [
+            { id: "XP-001", name: "Ahmad Al-Fatih", program: "1. [Coding] Scratch Junior & Visual Logic" },
+            { id: "XP-002", name: "Bima Sakti Putra", program: "1. [Coding] Scratch Junior & Visual Logic" },
+            { id: "XP-003", name: "Clara Wijaya", program: "4. [Coding] Python Programming Fundamentals" },
+            { id: "XP-004", name: "Daffa Pratama", program: "8. [Robotics] LEGO SPIKE Prime / EV3" },
+            { id: "XP-005", name: "Elena Putri", program: "9. [Robotics] Arduino Microcontroller & IoT" },
+            { id: "XP-006", name: "Farel Ramadhan", program: "3. [Coding] Roblox Studio & Lua Scripting" },
+            { id: "XP-007", name: "Giselle Tan", program: "11. [STEAM] 3D Design & Printing Tinkercad" },
+            { id: "XP-008", name: "Hafiz Maulana", program: "4. [Coding] Python Programming Fundamentals" }
+        ];
+
+        /**
+         * =========================================================================
+         * STATE & INISIALISASI ELEMEN DOM
+         * =========================================================================
+         */
+        let allStudents = [];
+        let attendanceRecords = {}; // Menyimpan status { studentId: 'Hadir' | 'Izin' | 'Sakit' | 'Alpha' }
+
+        // DOM Elements
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app-screen');
+        const loginForm = document.getElementById('login-form');
+        const passwordInput = document.getElementById('password-input');
+        const togglePasswordBtn = document.getElementById('toggle-password');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const refreshDataBtn = document.getElementById('refresh-data-btn');
+        
+        const dateInput = document.getElementById('attendance-date');
+        const teacherInput = document.getElementById('teacher-name');
+        const programSelect = document.getElementById('program-select');
+        const materialInput = document.getElementById('teaching-material');
+        const searchInput = document.getElementById('search-student');
+        const studentListContainer = document.getElementById('student-list-container');
+        const markAllPresentBtn = document.getElementById('mark-all-present');
+        const submitBtn = document.getElementById('submit-attendance-btn');
+        const connectionStatus = document.getElementById('connection-status');
+
+        // Modal Elements
+        const customModal = document.getElementById('custom-modal');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        /**
+         * =========================================================================
+         * FUNGSI MODAL NOTIFIKASI
+         * =========================================================================
+         */
+        function showModal(type, title, message) {
+            customModal.classList.remove('hidden');
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            if (type === 'success') {
+                modalIcon.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 bg-emerald-100 text-emerald-600";
+                modalIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else if (type === 'error') {
+                modalIcon.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 bg-rose-100 text-rose-600";
+                modalIcon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            } else if (type === 'loading') {
+                modalIcon.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 bg-blue-100 text-blue-600";
+                modalIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
+        });
+
+        /**
+         * =========================================================================
+         * SISTEM LOGIN & LOGOUT
+         * =========================================================================
+         */
+        togglePasswordBtn.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePasswordBtn.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (passwordInput.value === APP_PASSWORD) {
+                loginError.classList.add('hidden');
+                loginScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
+                initApp();
+            } else {
+                loginError.classList.remove('hidden');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            passwordInput.value = '';
+            appScreen.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+        });
+
+        /**
+         * =========================================================================
+         * INISIALISASI APLIKASI & AMBIL DATA GOOGLE SHEET
+         * =========================================================================
+         */
+        function initApp() {
+            // Set tanggal sesuai waktu lokal perangkat saat web app diakses (YYYY-MM-DD)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+
+            // Isi Dropdown 12 Program Ajar
+            programSelect.innerHTML = '<option value="ALL">-- Semua Program (Tampilkan Semua) --</option>';
+            PROGRAMS.forEach(prog => {
+                const option = document.createElement('option');
+                option.value = prog;
+                option.textContent = prog;
+                programSelect.appendChild(option);
+            });
+
+            // Ambil data siswa dari Google Sheet
+            fetchStudentsFromSheet();
+        }
+
+        async function fetchStudentsFromSheet() {
+            studentListContainer.innerHTML = `
+                <div class="text-center py-10 text-slate-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-600 mb-2"></i>
+                    <p class="text-xs">Mengambil data siswa...</p>
+                </div>
+            `;
+
+            if (!GOOGLE_SHEET_WEB_APP_URL) {
+                // Mode Demo jika URL belum diisi
+                setTimeout(() => {
+                    allStudents = [...FALLBACK_STUDENTS];
+                    connectionStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Mode Demo (URL Sheet Kosong)</span>';
+                    resetAttendanceState();
+                    renderStudentList();
+                }, 500);
+                return;
+            }
+
+            try {
+                connectionStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span><span>Menghubungkan ke Sheet...</span>';
+                
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL);
+                if (!response.ok) throw new Error("Gagal mengambil data dari server");
+                
+                const data = await response.json();
+                
+                // Format data yang diharapkan dari Apps Script: array of objects [{id, name, program}, ...]
+                if (Array.isArray(data) && data.length > 0) {
+                    allStudents = data;
+                    connectionStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Terhubung ke Google Sheet</span>';
+                } else {
+                    throw new Error("Format data kosong atau tidak sesuai");
+                }
+
+                resetAttendanceState();
+                renderStudentList();
+
+            } catch (error) {
+                console.error("Error fetching sheet:", error);
+                allStudents = [...FALLBACK_STUDENTS];
+                connectionStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span><span>Gagal Koneksi (Data Lokal)</span>';
+                resetAttendanceState();
+                renderStudentList();
+                showModal('error', 'Koneksi Gagal', 'Tidak dapat mengambil data dari Google Sheet. Pastikan URL Web App benar dan akses diatur ke "Anyone". Menggunakan data lokal sementara.');
+            }
+        }
+
+        refreshDataBtn.addEventListener('click', () => {
+            fetchStudentsFromSheet();
+        });
+
+        function resetAttendanceState() {
+            attendanceRecords = {};
+            allStudents.forEach(student => {
+                attendanceRecords[student.id] = 'Hadir'; // Default hadir agar pengajar lebih cepat
+            });
+        }
+
+        /**
+         * =========================================================================
+         * RENDER DAFTAR SISWA & INTERAKSI STATUS PRESENSI
+         * =========================================================================
+         */
+        function getFilteredStudents() {
+            const selectedProgram = programSelect.value;
+            const searchQuery = searchInput.value.toLowerCase().trim();
+
+            return allStudents.filter(student => {
+                const matchProgram = selectedProgram === 'ALL' || (student.program && student.program.toLowerCase().includes(selectedProgram.toLowerCase()));
+                const matchSearch = student.name.toLowerCase().includes(searchQuery) || (student.id && student.id.toLowerCase().includes(searchQuery));
+                return matchProgram && matchSearch;
+            });
+        }
+
+        function renderStudentList() {
+            const filtered = getFilteredStudents();
+            studentListContainer.innerHTML = '';
+
+            if (filtered.length === 0) {
+                studentListContainer.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl text-center border border-slate-100">
+                        <i class="fa-solid fa-user-slash text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-500">Tidak ada siswa ditemukan</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Coba ubah filter program ajar atau kata kunci pencarian.</p>
+                    </div>
+                `;
+                updateStats(filtered);
+                return;
+            }
+
+            filtered.forEach(student => {
+                const currentStatus = attendanceRecords[student.id] || 'Hadir';
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 fade-in";
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">${student.id || 'SISWA'}</span>
+                            <h4 class="font-bold text-sm text-slate-800 mt-1">${student.name}</h4>
+                            <p class="text-[11px] text-blue-600 font-medium mt-0.5 line-clamp-1">${student.program || 'Program Umum'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-50">
+                        ${['Hadir', 'Izin', 'Sakit', 'Alpha'].map(status => {
+                            const isSelected = currentStatus === status;
+                            let btnStyle = "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100";
+                            
+                            if (isSelected) {
+                                if (status === 'Hadir') btnStyle = "bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/30";
+                                if (status === 'Izin') btnStyle = "bg-amber-500 text-white border-amber-600 shadow-sm shadow-amber-500/30";
+                                if (status === 'Sakit') btnStyle = "bg-blue-500 text-white border-blue-600 shadow-sm shadow-blue-500/30";
+                                if (status === 'Alpha') btnStyle = "bg-rose-500 text-white border-rose-600 shadow-sm shadow-rose-500/30";
+                            }
+
+                            return `
+                                <button type="button" onclick="setStudentStatus('${student.id}', '${status}')"
+                                    class="py-1.5 px-1 rounded-xl text-[11px] font-bold border transition-all active:scale-95 ${btnStyle}">
+                                    ${status}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                studentListContainer.appendChild(card);
+            });
+
+            updateStats(filtered);
+        }
+
+        // Fungsi global agar bisa dipanggil dari tombol inline HTML
+        window.setStudentStatus = function(studentId, status) {
+            attendanceRecords[studentId] = status;
+            renderStudentList();
+        };
+
+        function updateStats(filteredList) {
+            let hadir = 0, izinSakit = 0, alpha = 0;
+
+            filteredList.forEach(s => {
+                const st = attendanceRecords[s.id] || 'Hadir';
+                if (st === 'Hadir') hadir++;
+                else if (st === 'Izin' || st === 'Sakit') izinSakit++;
+                else if (st === 'Alpha') alpha++;
+            });
+
+            document.getElementById('stat-total').textContent = filteredList.length;
+            document.getElementById('stat-hadir').textContent = hadir;
+            document.getElementById('stat-izin').textContent = izinSakit;
+            document.getElementById('stat-alpha').textContent = alpha;
+        }
+
+        // Event Listeners Filter & Pencarian
+        programSelect.addEventListener('change', renderStudentList);
+        searchInput.addEventListener('input', renderStudentList);
+
+        markAllPresentBtn.addEventListener('click', () => {
+            const filtered = getFilteredStudents();
+            filtered.forEach(s => {
+                attendanceRecords[s.id] = 'Hadir';
+            });
+            renderStudentList();
+        });
+
+        /**
+         * =========================================================================
+         * KIRIM / SIMPAN DATA PRESENSI KE GOOGLE SHEET
+         * =========================================================================
+         */
+        submitBtn.addEventListener('click', async () => {
+            const filteredStudents = getFilteredStudents();
+            const dateVal = dateInput.value;
+            const teacherVal = teacherInput.value.trim();
+            const programVal = programSelect.value;
+            const materialVal = materialInput.value.trim();
+
+            if (!dateVal) {
+                showModal('error', 'Tanggal Kosong', 'Silakan pilih tanggal presensi terlebih dahulu.');
+                return;
+            }
+            if (!teacherVal) {
+                showModal('error', 'Nama Coach Kosong', 'Silakan isi nama pengajar / coach sebelum menyimpan presensi.');
+                teacherInput.focus();
+                return;
+            }
+            if (!materialVal) {
+                showModal('error', 'Materi Ajar Kosong', 'Silakan isi materi ajar / topik pertemuan hari ini.');
+                materialInput.focus();
+                return;
+            }
+            if (filteredStudents.length === 0) {
+                showModal('error', 'Tidak Ada Siswa', 'Tidak ada daftar siswa yang ditampilkan untuk disimpan.');
+                return;
+            }
+
+            // Siapkan payload data yang akan dikirim
+            const payload = {
+                tanggal: dateVal,
+                pengajar: teacherVal,
+                programFilter: programVal,
+                materiAjar: materialVal,
+                records: filteredStudents.map(student => ({
+                    idSiswa: student.id,
+                    namaSiswa: student.name,
+                    program: student.program || programVal,
+                    status: attendanceRecords[student.id] || 'Hadir'
+                }))
+            };
+
+            if (!GOOGLE_SHEET_WEB_APP_URL) {
+                // Simulasi pengiriman jika URL Google Sheet belum diisi
+                showModal('loading', 'Menyimpan (Mode Demo)...', 'Mensimulasikan pengiriman data ke Google Sheet...');
+                setTimeout(() => {
+                    console.log("Payload Presensi:", payload);
+                    showModal('success', 'Simulasi Berhasil!', `Sebanyak ${payload.records.length} data presensi (Materi: "${materialVal}") siap disimpan. Silakan isi GOOGLE_SHEET_WEB_APP_URL pada baris 216 kode program untuk menyimpan ke Google Sheet asli.`);
+                }, 1000);
+                return;
+            }
+
+            // Kirim data ke Google Apps Script Web App
+            try {
+                showModal('loading', 'Menyimpan Presensi...', 'Sedang mengirim data ke Google Sheet XPERT ACADEMY...');
+                modalCloseBtn.classList.add('hidden');
+
+                // Menggunakan mode no-cors atau text/plain untuk menghindari preflight CORS Google Apps Script
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                modalCloseBtn.classList.remove('hidden');
+
+                if (result.status === 'success') {
+                    showModal('success', 'Presensi Tersimpan!', `Berhasil menyimpan ${payload.records.length} data presensi siswa ke Google Sheet.`);
+                } else {
+                    throw new Error(result.message || 'Terjadi kesalahan pada server Google Sheet.');
+                }
+
+            } catch (error) {
+                console.error("Submit error:", error);
+                modalCloseBtn.classList.remove('hidden');
+                showModal('error', 'Gagal Menyimpan', 'Terjadi kendala saat mengirim data ke Google Sheet. Pastikan URL Web App sudah benar dan memiliki izin akses.');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xpert Academy - Sistem Presensi Siswa</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        xpert: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom radio pill styling for smooth touch interaction */
+        .status-radio:checked + .status-label-hadir {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+        }
+        .status-radio:checked + .status-label-sakit {
+            background-color: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+        }
+        .status-radio:checked + .status-label-izin {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.35);
+        }
+        .status-radio:checked + .status-label-alpa {
+            background-color: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- ===================================================================== -->
+    <!-- KONFIGURASI UTAMA GOOGLE APPS SCRIPT (BARIS KE-85)                    -->
+    <!-- Ganti teks di dalam tanda kutip dengan URL Web App Google Script Anda -->
+    <!-- ===================================================================== -->
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKNT45LdhLsYGqYPPd_kG8d5AQR8aMHxz_l80J7YXPnTVe1wwg8_dfZQ7Y3Ql1J-M7KQ/exec";
+    </script>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                    <i class="fa-solid fa-microchip text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 leading-none">
+                        Xpert <span class="text-indigo-600">Academy</span>
+                    </h1>
+                    <p class="text-[11px] font-medium text-slate-500 tracking-wider uppercase mt-0.5">
+                        Coding • Robotics • STEAM
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Actions: Connection Status & Setup Guide Button -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Connection Status Badge -->
+                <div id="connection-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 transition-all">
+                    <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="connection-text">Mode Demo (Offline)</span>
+                </div>
+
+                <!-- Setup Guide Button -->
+                <button onclick="openSetupModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors">
+                    <i class="fa-solid fa-code"></i>
+                    <span class="hidden sm:inline">Setup Google Sheet</span>
+                    <span class="sm:hidden">Setup</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        
+        <!-- Session Info & Program Filter Card -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+                <div>
+                    <h2 class="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-user text-indigo-600"></i>
+                        Detail Sesi Pembelajaran
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Pilih program ajar untuk memuat daftar siswa otomatis dari Google Sheet.</p>
+                </div>
+                <button onclick="fetchStudentsFromSheet()" id="btn-refresh" class="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 transition-colors">
+                    <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+                    Muat Ulang Data Siswa
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- 1. Pilihan 15 Program Ajar -->
+                <div class="lg:col-span-2">
+                    <label for="program-select" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Program Ajar (15 Program) <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="program-select" onchange="handleProgramChange()" class="w-full appearance-none bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block p-3 pr-10 font-medium transition-all">
+                            <optgroup label="💻 CODING TRACK">
+                                <option value="Scratch Junior (Coding)">1. Scratch Junior (Coding)</option>
+                                <option value="Scratch Programming (Coding)">2. Scratch Programming (Coding)</option>
+                                <option value="Python for Kids & Teens (Coding)">3. Python for Kids & Teens (Coding)</option>
+                                <option value="Web Development HTML/CSS/JS (Coding)">4. Web Development HTML/CSS/JS (Coding)</option>
+                                <option value="Game Development with Roblox/Lua (Coding)">5. Game Development with Roblox/Lua (Coding)</option>
+                                <option value="Mobile App Inventor (Coding)">6. Mobile App Inventor (Coding)</option>
+                                <option value="AI & Machine Learning Basics (Coding)">7. AI & Machine Learning Basics (Coding)</option>
+                            </optgroup>
+                            <optgroup label="🤖 ROBOTICS TRACK">
+                                <option value="LEGO Spike Essential (Robotics)">8. LEGO Spike Essential (Robotics)</option>
+                                <option value="LEGO Spike Prime (Robotics)">9. LEGO Spike Prime (Robotics)</option>
+                                <option value="Arduino & Electronics (Robotics)">10. Arduino & Electronics (Robotics)</option>
+                                <option value="Micro:bit Smart Coding (Robotics)">11. Micro:bit Smart Coding (Robotics)</option>
+                                <option value="VEX Robotics (Robotics)">12. VEX Robotics (Robotics)</option>
+                            </optgroup>
+                            <optgroup label="🚀 STEAM TRACK">
+                                <option value="3D Design & Printing (STEAM)">13. 3D Design & Printing (STEAM)</option>
+                                <option value="Science & Engineering Lab (STEAM)">14. Science & Engineering Lab (STEAM)</option>
+                                <option value="Digital Art & Animation (STEAM)">15. Digital Art & Animation (STEAM)</option>
+                            </optgroup>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Tanggal Pertemuan -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="session-date" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            Tanggal Pertemuan <span class="text-rose-500">*</span>
+                        </label>
+                        <span id="live-date-badge" class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                            Hari Ini
+                        </span>
+                    </div>
+                    <input type="date" id="session-date" onchange="updateDateBadge()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 font-medium">
+                </div>
+
+                <!-- 3. Nama Mentor / Pengajar -->
+                <div>
+                    <label for="mentor-name" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Nama Mentor / Pengajar <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="mentor-name" placeholder="Contoh: Kak Budi" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                </div>
+
+                <!-- 4. Topik / Materi Hari Ini -->
+                <div class="md:col-span-2 lg:col-span-4">
+                    <label for="session-topic" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Topik / Materi Pembelajaran Hari Ini <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="session-topic" placeholder="Contoh: Pertemuan 4 - Membuat Logika Loop & Variabel pada Game" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                </div>
+            </div>
+        </section>
+
+        <!-- Attendance Summary & Quick Actions Bar -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <!-- Summary Counters -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-500 mr-1">Rekap Sesi:</span>
+                <span class="px-2.5 py-1 rounded-lg bg-slate-200/70 text-slate-700 text-xs font-bold">
+                    Total: <span id="count-total">0</span>
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold">
+                    Hadir: <span id="count-hadir">0</span>
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold">
+                    Sakit: <span id="count-sakit">0</span>
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs font-bold">
+                    Izin: <span id="count-izin">0</span>
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">
+                    Alpa: <span id="count-alpa">0</span>
+                </span>
+            </div>
+
+            <!-- Quick Mark All Present Button -->
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="markAllPresent()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all shadow-sm">
+                    <i class="fa-solid fa-check-double"></i>
+                    Tandai Semua Hadir
+                </button>
+            </div>
+        </div>
+
+        <!-- Student Attendance List Card -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden mb-8">
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden py-16 text-center">
+                <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                <p class="text-sm font-medium text-slate-600">Mengambil data siswa dari Google Sheet...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 px-4 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fa-solid fa-user-slash"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Belum Ada Siswa Terdaftar</h3>
+                <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                    Tidak ditemukan data siswa untuk program ajar ini. Pastikan nama program pada sheet <b>Data_Siswa</b> sama persis dengan pilihan di atas.
+                </p>
+            </div>
+
+            <!-- Responsive Table / Card List -->
+            <div id="student-list-container" class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3.5 px-4 w-12 text-center">No</th>
+                            <th class="py-3.5 px-4 min-w-[200px]">Nama & ID Siswa</th>
+                            <th class="py-3.5 px-4 min-w-[290px]">Status Kehadiran</th>
+                            <th class="py-3.5 px-4 min-w-[220px]">Catatan / Progress Siswa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- Baris siswa akan di-generate secara dinamis oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer Submit Action -->
+            <div class="bg-slate-50 px-5 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-indigo-500"></i>
+                    Data akan tersimpan otomatis ke tab <b>Rekap_Presensi</b> di Google Sheet.
+                </p>
+                <button type="button" id="btn-submit" onclick="submitAttendance()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] transition-all shadow-md shadow-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-cloud-arrow-up" id="submit-icon"></i>
+                    <span id="submit-text">Simpan Presensi ke Google Sheet</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-5 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <p>&copy; 2026 <b>Xpert Academy</b> — Coding, Robotics & STEAM Education.</p>
+            <p>Hosted on GitHub Pages • Powered by Google Sheets</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL PANDUAN SETUP GOOGLE APPS SCRIPT                                -->
+    <!-- ===================================================================== -->
+    <div id="setup-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-base">Panduan Integrasi Google Sheets</h3>
+                        <p class="text-[11px] text-slate-300">Hubungkan GitHub Pages dengan Database Google Sheet</p>
+                    </div>
+                </div>
+                <button onclick="closeSetupModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-5 text-sm text-slate-700">
+                <!-- Step 1 -->
+                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4">
+                    <h4 class="font-bold text-indigo-950 mb-1 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+                        Siapkan 2 Tab (Sheet) di Google Spreadsheet Anda
+                    </h4>
+                    <ul class="list-disc list-inside text-xs text-slate-700 space-y-1.5 mt-2 ml-1">
+                        <li>Tab 1 bernama <code class="bg-white px-1.5 py-0.5 rounded border font-mono text-indigo-700">Data_Siswa</code> dengan kolom header baris 1: <b>ID_Siswa</b> | <b>Nama_Siswa</b> | <b>Program</b> | <b>Status</b> (isi "Aktif")</li>
+                        <li>Tab 2 bernama <code class="bg-white px-1.5 py-0.5 rounded border font-mono text-indigo-700">Rekap_Presensi</code> dengan kolom header baris 1: <b>Timestamp</b> | <b>Tanggal</b> | <b>Program</b> | <b>Mentor</b> | <b>Topik</b> | <b>ID_Siswa</b> | <b>Nama_Siswa</b> | <b>Status_Hadir</b> | <b>Catatan</b></li>
+                    </ul>
+                </div>
+
+                <!-- Step 2 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">2</span>
+                            Salin Kode Google Apps Script Ini
+                        </h4>
+                        <button onclick="copyAppsScriptCode()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition-colors">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copy-btn-text">Salin Kode</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">Buka <b>Extensions &gt; Apps Script</b> di Google Sheet Anda, hapus semua kode lama, lalu tempel kode berikut:</p>
+                    <pre id="apps-script-code" class="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed select-all">function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Data_Siswa");
+  var data = sheet.getDataRange().getValues();
+  var students = [];
+  
+  // Mulai dari baris ke-2 (index 1) untuk melewati header
+  for (var i = 1; i &lt; data.length; i++) {
+    var status = data[i][3] ? data[i][3].toString().trim().toLowerCase() : "aktif";
+    if (data[i][1] &amp;&amp; status === "aktif") {
+      students.push({
+        id: data[i][0].toString(),
+        name: data[i][1].toString(),
+        program: data[i][2].toString()
+      });
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "success",
+    students: students
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Rekap_Presensi");
+    var payload = JSON.parse(e.postData.contents);
+    var timestamp = new Date();
+    
+    payload.records.forEach(function(item) {
+      sheet.appendRow([
+        timestamp,
+        payload.date,
+        payload.program,
+        payload.mentor,
+        payload.topic,
+        item.id,
+        item.name,
+        item.status,
+        item.note
+      ]);
+    });
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      message: "Presensi berhasil disimpan!"
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <h4 class="font-bold text-amber-950 mb-1 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center">3</span>
+                        Deploy & Tempel URL ke Kode HTML (Baris 85)
+                    </h4>
+                    <p class="text-xs text-amber-900 leading-relaxed mt-1">
+                        Klik <b>Deploy &gt; New deployment &gt; Web app</b>. Pada bagian <i>Who has access</i>, wajib pilih <b>Anyone</b>. Salin URL Web App yang muncul, lalu tempelkan ke variabel <code class="bg-white px-1.5 py-0.5 rounded border font-mono font-bold">GOOGLE_SCRIPT_URL</code> pada <b>baris ke-85</b> file <code class="font-mono">index.html</code> ini sebelum di-upload ke GitHub.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeSetupModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
+                    Mengerti & Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- LOGIKA JAVASCRIPT APLIKASI PRESENSI                                   -->
+    <!-- ===================================================================== -->
+    <script>
+        // Data Mock / Simulasi untuk 15 Program Ajar (digunakan saat Mode Demo / URL belum diisi)
+        const MOCK_STUDENTS_DB = [
+            // 1. Scratch Junior (Coding)
+            { id: "XA-101", name: "Alya Putri Rahmadani", program: "Scratch Junior (Coding)" },
+            { id: "XA-102", name: "Kenzo Alfarizi", program: "Scratch Junior (Coding)" },
+            { id: "XA-103", name: "Mikhayla Azzahra", program: "Scratch Junior (Coding)" },
+            { id: "XA-104", name: "Gibran Mahendra", program: "Scratch Junior (Coding)" },
+
+            // 2. Scratch Programming (Coding)
+            { id: "XA-105", name: "Rafa Pratama Wijaya", program: "Scratch Programming (Coding)" },
+            { id: "XA-106", name: "Nayla Salsabila", program: "Scratch Programming (Coding)" },
+            { id: "XA-107", name: "Darren Nathaniel", program: "Scratch Programming (Coding)" },
+
+            // 3. Python for Kids & Teens (Coding)
+            { id: "XA-108", name: "Fathan Al-Ghifari", program: "Python for Kids & Teens (Coding)" },
+            { id: "XA-109", name: "Clarissa Aurelia Tan", program: "Python for Kids & Teens (Coding)" },
+            { id: "XA-110", name: "Bima Sakti Nugroho", program: "Python for Kids & Teens (Coding)" },
+            { id: "XA-111", name: "Zaskia Adelia Putri", program: "Python for Kids & Teens (Coding)" },
+
+            // 4. Web Development HTML/CSS/JS (Coding)
+            { id: "XA-112", name: "Kevin Jonathan Lim", program: "Web Development HTML/CSS/JS (Coding)" },
+            { id: "XA-113", name: "Dinda Kirana", program: "Web Development HTML/CSS/JS (Coding)" },
+            { id: "XA-114", name: "Rayhan Dwi Saputra", program: "Web Development HTML/CSS/JS (Coding)" },
+
+            // 5. Game Development with Roblox/Lua (Coding)
+            { id: "XA-115", name: "Arka Virendra", program: "Game Development with Roblox/Lua (Coding)" },
+            { id: "XA-116", name: "Marvel Christian", program: "Game Development with Roblox/Lua (Coding)" },
+            { id: "XA-117", name: "Syahira Khairunnisa", program: "Game Development with Roblox/Lua (Coding)" },
+
+            // 6. Mobile App Inventor (Coding)
+            { id: "XA-118", name: "Naufal Hakim", program: "Mobile App Inventor (Coding)" },
+            { id: "XA-119", name: "Felicia Wijaya", program: "Mobile App Inventor (Coding)" },
+
+            // 7. AI & Machine Learning Basics (Coding)
+            { id: "XA-120", name: "Alvin Kurniawan", program: "AI & Machine Learning Basics (Coding)" },
+            { id: "XA-121", name: "Nadia Kusuma Wardani", program: "AI & Machine Learning Basics (Coding)" },
+
+            // 8. LEGO Spike Essential (Robotics)
+            { id: "XA-201", name: "Zidan Maulana", program: "LEGO Spike Essential (Robotics)" },
+            { id: "XA-202", name: "Kayla Putri", program: "LEGO Spike Essential (Robotics)" },
+            { id: "XA-203", name: "Lionel Sebastian", program: "LEGO Spike Essential (Robotics)" },
+
+            // 9. LEGO Spike Prime (Robotics)
+            { id: "XA-204", name: "Raditya Dika Putra", program: "LEGO Spike Prime (Robotics)" },
+            { id: "XA-205", name: "Shanum Aulia", program: "LEGO Spike Prime (Robotics)" },
+
+            // 10. Arduino & Electronics (Robotics)
+            { id: "XA-206", name: "Farhan Syahputra", program: "Arduino & Electronics (Robotics)" },
+            { id: "XA-207", name: "Jason Alexander", program: "Arduino & Electronics (Robotics)" },
+            { id: "XA-208", name: "Rizky Ramadhan", program: "Arduino & Electronics (Robotics)" },
+
+            // 11. Micro:bit Smart Coding (Robotics)
+            { id: "XA-209", name: "Aisyah Humaira", program: "Micro:bit Smart Coding (Robotics)" },
+            { id: "XA-210", name: "Evan Setiawan", program: "Micro:bit Smart Coding (Robotics)" },
+
+            // 12. VEX Robotics (Robotics)
+            { id: "XA-211", name: "Bryan Gunawan", program: "VEX Robotics (Robotics)" },
+            { id: "XA-212", name: "Hafizah Nurul", program: "VEX Robotics (Robotics)" },
+
+            // 13. 3D Design & Printing (STEAM)
+            { id: "XA-301", name: "Chika Amelia", program: "3D Design & Printing (STEAM)" },
+            { id: "XA-302", name: "Daffa Arya", program: "3D Design & Printing (STEAM)" },
+
+            // 14. Science & Engineering Lab (STEAM)
+            { id: "XA-303", name: "Keisha Anindita", program: "Science & Engineering Lab (STEAM)" },
+            { id: "XA-304", name: "Toby Pratama", program: "Science & Engineering Lab (STEAM)" },
+
+            // 15. Digital Art & Animation (STEAM)
+            { id: "XA-305", name: "Salma Salsabila", program: "Digital Art & Animation (STEAM)" },
+            { id: "XA-306", name: "Viona Natalie", program: "Digital Art & Animation (STEAM)" }
+        ];
+
+        // State Global Aplikasi
+        let allStudentsData = [];
+        let currentProgramStudents = [];
+        let isConnectedToSheet = false;
+
+        // Cek apakah URL Google Apps Script sudah dikonfigurasi dengan valid
+        function isScriptUrlConfigured() {
+            return (
+                typeof GOOGLE_SCRIPT_URL === "string" &&
+                GOOGLE_SCRIPT_URL.trim() !== "" &&
+                GOOGLE_SCRIPT_URL !== "MASUKKAN_URL_WEB_APP_GOOGLE_APPS_SCRIPT_DISINI" &&
+                GOOGLE_SCRIPT_URL.startsWith("http")
+            );
+        }
+
+        // Inisialisasi saat halaman selesai dimuat
+        document.addEventListener("DOMContentLoaded", () => {
+            // Otomatis mengatur tanggal ke waktu lokal saat web app diakses
+            setRealTimeLocalDate();
+
+            // Cek apakah URL Google Script sudah diisi dan ambil data
+            fetchStudentsFromSheet();
+        });
+
+        // Fungsi untuk mengatur tanggal otomatis sesuai waktu akses (Real-Time)
+        function setRealTimeLocalDate() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            
+            const dateInput = document.getElementById("session-date");
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+            updateDateBadge();
+        }
+
+        // Memperbarui tampilan badge tanggal dalam format Bahasa Indonesia
+        function updateDateBadge() {
+            const dateInput = document.getElementById("session-date").value;
+            const badgeEl = document.getElementById("live-date-badge");
+            if (!dateInput || !badgeEl) return;
+
+            const [year, month, day] = dateInput.split('-').map(Number);
+            const selectedDate = new Date(year, month - 1, day);
+            const today = new Date();
+            
+            const isToday = selectedDate.getFullYear() === today.getFullYear() &&
+                            selectedDate.getMonth() === today.getMonth() &&
+                            selectedDate.getDate() === today.getDate();
+
+            const formattedIndo = selectedDate.toLocaleDateString('id-ID', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+
+            badgeEl.textContent = isToday ? `Hari Ini • ${formattedIndo}` : formattedIndo;
+        }
+
+        // Update badge status koneksi di header
+        function updateConnectionUI(connected) {
+            isConnectedToSheet = connected;
+            const badge = document.getElementById("connection-badge");
+            const dot = document.getElementById("connection-dot");
+            const text = document.getElementById("connection-text");
+
+            if (connected) {
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all";
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                text.textContent = "Terhubung Google Sheet";
+            } else {
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 transition-all";
+                dot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+                text.textContent = "Mode Demo (Offline)";
+            }
+        }
+
+        // Mengambil data siswa dari Google Sheet (atau fallback ke Mock Data)
+        async function fetchStudentsFromSheet() {
+            const loadingEl = document.getElementById("loading-state");
+            const containerEl = document.getElementById("student-list-container");
+            const emptyEl = document.getElementById("empty-state");
+            const refreshIcon = document.getElementById("refresh-icon");
+
+            loadingEl.classList.remove("hidden");
+            containerEl.classList.add("hidden");
+            emptyEl.classList.add("hidden");
+            refreshIcon.classList.add("fa-spin");
+
+            if (!isScriptUrlConfigured()) {
+                // Gunakan Mock Data jika URL belum dikonfigurasi
+                setTimeout(() => {
+                    allStudentsData = [...MOCK_STUDENTS_DB];
+                    updateConnectionUI(false);
+                    loadingEl.classList.add("hidden");
+                    refreshIcon.classList.remove("fa-spin");
+                    handleProgramChange();
+                }, 400);
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                if (!response.ok) throw new Error("Gagal merespons server Google Script");
+                
+                const result = await response.json();
+                if (result.status === "success" && Array.isArray(result.students)) {
+                    allStudentsData = result.students;
+                    updateConnectionUI(true);
+                    showToast("Data siswa berhasil dimuat dari Google Sheet.", "success");
+                } else {
+                    throw new Error("Format data tidak valid");
+                }
+            } catch (error) {
+                console.error("Error fetching sheet:", error);
+                allStudentsData = [...MOCK_STUDENTS_DB];
+                updateConnectionUI(false);
+                showToast("Gagal terhubung ke Google Sheet. Beralih ke Mode Demo.", "warning");
+            } finally {
+                loadingEl.classList.add("hidden");
+                refreshIcon.classList.remove("fa-spin");
+                handleProgramChange();
+            }
+        }
+
+        // Filter daftar siswa saat pilihan 15 program ajar diubah
+        function handleProgramChange() {
+            const selectedProgram = document.getElementById("program-select").value;
+            currentProgramStudents = allStudentsData.filter(
+                student => student.program.trim().toLowerCase() === selectedProgram.trim().toLowerCase()
+            );
+            renderStudentTable();
+        }
+
+        // Render baris tabel presensi siswa
+        function renderStudentTable() {
+            const tbody = document.getElementById("student-table-body");
+            const containerEl = document.getElementById("student-list-container");
+            const emptyEl = document.getElementById("empty-state");
+
+            tbody.innerHTML = "";
+
+            if (currentProgramStudents.length === 0) {
+                containerEl.classList.add("hidden");
+                emptyEl.classList.remove("hidden");
+                updateCounters();
+                return;
+            }
+
+            emptyEl.classList.add("hidden");
+            containerEl.classList.remove("hidden");
+
+            currentProgramStudents.forEach((student, index) => {
+                const row = document.createElement("tr");
+                row.className = "hover:bg-slate-50/80 transition-colors";
+                row.dataset.studentId = student.id;
+                row.dataset.studentName = student.name;
+
+                // Buat inisial avatar dari nama siswa
+                const initials = student.name
+                    .split(" ")
+                    .slice(0, 2)
+                    .map(n => n[0])
+                    .join("")
+                    .toUpperCase();
+
+                row.innerHTML = `
+                    <td class="py-3.5 px-4 text-center font-semibold text-slate-500">
+                        ${index + 1}
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                                ${initials}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">${escapeHtml(student.name)}</div>
+                                <div class="text-[11px] font-mono text-slate-400">${escapeHtml(student.id)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/70">
+                            <!-- Hadir -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="status-${index}" value="Hadir" class="sr-only status-radio" checked onchange="updateCounters()">
+                                <span class="status-label-hadir block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all select-none">
+                                    Hadir
+                                </span>
+                            </label>
+                            <!-- Sakit -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="status-${index}" value="Sakit" class="sr-only status-radio" onchange="updateCounters()">
+                                <span class="status-label-sakit block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all select-none">
+                                    Sakit
+                                </span>
+                            </label>
+                            <!-- Izin -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="status-${index}" value="Izin" class="sr-only status-radio" onchange="updateCounters()">
+                                <span class="status-label-izin block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all select-none">
+                                    Izin
+                                </span>
+                            </label>
+                            <!-- Alpa -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="status-${index}" value="Alpa" class="sr-only status-radio" onchange="updateCounters()">
+                                <span class="status-label-alpa block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all select-none">
+                                    Alpa
+                                </span>
+                            </label>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <input type="text" placeholder="Catatan project / keaktifan..." class="student-note w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-lg px-3 py-1.5 text-xs text-slate-700 transition-all">
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateCounters();
+        }
+
+        // Tandai semua siswa sebagai Hadir
+        function markAllPresent() {
+            if (currentProgramStudents.length === 0) return;
+            const hadirRadios = document.querySelectorAll('input[type="radio"][value="Hadir"]');
+            hadirRadios.forEach(radio => {
+                radio.checked = true;
+            });
+            updateCounters();
+            showToast("Semua siswa ditandai Hadir.", "info");
+        }
+
+        // Hitung rekap jumlah Hadir, Sakit, Izin, Alpa secara real-time
+        function updateCounters() {
+            const total = currentProgramStudents.length;
+            let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+
+            const checkedRadios = document.querySelectorAll('#student-table-body input[type="radio"]:checked');
+            checkedRadios.forEach(radio => {
+                if (radio.value === "Hadir") hadir++;
+                else if (radio.value === "Sakit") sakit++;
+                else if (radio.value === "Izin") izin++;
+                else if (radio.value === "Alpa") alpa++;
+            });
+
+            document.getElementById("count-total").textContent = total;
+            document.getElementById("count-hadir").textContent = hadir;
+            document.getElementById("count-sakit").textContent = sakit;
+            document.getElementById("count-izin").textContent = izin;
+            document.getElementById("count-alpa").textContent = alpa;
+        }
+
+        // Kirim data presensi ke Google Sheet via POST
+        async function submitAttendance() {
+            const program = document.getElementById("program-select").value;
+            const date = document.getElementById("session-date").value;
+            const mentor = document.getElementById("mentor-name").value.trim();
+            const topic = document.getElementById("session-topic").value.trim();
+
+            // Validasi input wajib
+            if (!date) {
+                showToast("Mohon pilih tanggal pertemuan.", "error");
+                document.getElementById("session-date").focus();
+                return;
+            }
+            if (!mentor) {
+                showToast("Mohon isi nama mentor/pengajar.", "error");
+                document.getElementById("mentor-name").focus();
+                return;
+            }
+            if (!topic) {
+                showToast("Mohon isi topik/materi pembelajaran hari ini.", "error");
+                document.getElementById("session-topic").focus();
+                return;
+            }
+            if (currentProgramStudents.length === 0) {
+                showToast("Tidak ada data siswa untuk disimpan.", "error");
+                return;
+            }
+
+            // Kumpulkan data dari setiap baris siswa
+            const rows = document.querySelectorAll("#student-table-body tr");
+            const records = [];
+
+            rows.forEach((row, index) => {
+                const id = row.dataset.studentId;
+                const name = row.dataset.studentName;
+                const statusRadio = row.querySelector(`input[name="status-${index}"]:checked`);
+                const status = statusRadio ? statusRadio.value : "Hadir";
+                const note = row.querySelector(".student-note").value.trim();
+
+                records.push({ id, name, status, note });
+            });
+
+            const payload = {
+                date,
+                program,
+                mentor,
+                topic,
+                records
+            };
+
+            // Ubah tombol ke status loading
+            const btnSubmit = document.getElementById("btn-submit");
+            const submitIcon = document.getElementById("submit-icon");
+            const submitText = document.getElementById("submit-text");
+
+            btnSubmit.disabled = true;
+            submitIcon.className = "fa-solid fa-circle-notch fa-spin";
+            submitText.textContent = "Menyimpan ke Google Sheet...";
+
+            // Jika masih Mode Demo (URL belum diisi)
+            if (!isScriptUrlConfigured()) {
+                setTimeout(() => {
+                    btnSubmit.disabled = false;
+                    submitIcon.className = "fa-solid fa-cloud-arrow-up";
+                    submitText.textContent = "Simpan Presensi ke Google Sheet";
+                    showToast(`[Mode Demo] Simulasi simpan ${records.length} data presensi berhasil! Klik 'Setup Google Sheet' untuk koneksi asli.`, "success");
+                }, 800);
+                return;
+            }
+
+            // Kirim data asli ke Google Apps Script Web App
+            try {
+                // Menggunakan text/plain agar terhindar dari CORS preflight issue pada Google Apps Script
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8",
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.status === "success") {
+                    showToast(`Berhasil menyimpan presensi ${records.length} siswa ke Google Sheet!`, "success");
+                    // Reset catatan & topik setelah berhasil simpan
+                    document.getElementById("session-topic").value = "";
+                    document.querySelectorAll(".student-note").forEach(input => input.value = "");
+                } else {
+                    throw new Error(result.message || "Gagal menyimpan data.");
+                }
+            } catch (error) {
+                console.error("Submit error:", error);
+                showToast("Terjadi kesalahan saat menyimpan ke Google Sheet: " + error.message, "error");
+            } finally {
+                btnSubmit.disabled = false;
+                submitIcon.className = "fa-solid fa-cloud-arrow-up";
+                submitText.textContent = "Simpan Presensi ke Google Sheet";
+            }
+        }
+
+        // Kontrol Modal Setup Google Sheet
+        function openSetupModal() {
+            document.getElementById("setup-modal").classList.remove("hidden");
+        }
+
+        function closeSetupModal() {
+            document.getElementById("setup-modal").classList.add("hidden");
+        }
+
+        // Salin kode Google Apps Script ke clipboard
+        function copyAppsScriptCode() {
+            const codeText = document.getElementById("apps-script-code").innerText;
+            const textarea = document.createElement("textarea");
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+
+            const copyBtnText = document.getElementById("copy-btn-text");
+            copyBtnText.textContent = "Tersalin!";
+            showToast("Kode Google Apps Script berhasil disalin!", "success");
+            setTimeout(() => {
+                copyBtnText.textContent = "Salin Kode";
+            }, 2000);
+        }
+
+        // Sistem Notifikasi Toast Modern
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+
+            const styles = {
+                success: "bg-emerald-900 text-white border-emerald-700",
+                error: "bg-rose-900 text-white border-rose-700",
+                warning: "bg-amber-900 text-white border-amber-700",
+                info: "bg-slate-900 text-white border-slate-700"
+            };
+
+            const icons = {
+                success: "fa-circle-check text-emerald-400",
+                error: "fa-circle-exclamation text-rose-400",
+                warning: "fa-triangle-exclamation text-amber-400",
+                info: "fa-circle-info text-indigo-400"
+            };
+
+            toast.className = `pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.info} text-base mt-0.5"></i>
+                <div class="flex-1 leading-relaxed">${escapeHtml(message)}</div>
+            `;
+
+            container.appendChild(toast);
+
+            // Animasi masuk
+            requestAnimationFrame(() => {
+                toast.classList.remove("translate-y-2", "opacity-0");
+            });
+
+            // Hilang otomatis setelah 4 detik
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Helper keamanan untuk mencegah XSS
+        function escapeHtml(unsafe) {
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

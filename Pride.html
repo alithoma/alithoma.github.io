@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xpert Academy - Sistem Presensi Siswa (Coding, Robotics & STEAM)</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Inter & JetBrains Mono dari Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome 6 via CDN untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Konfigurasi Tailwind Custom Theme Xpert Academy -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        xpert: {
+                            dark: '#0B1120',      // Deep Tech Navy
+                            navy: '#111C35',      // Card Dark Navy
+                            primary: '#0284C7',   // Tech Blue
+                            cyan: '#06B6D4',      // Electric Cyan
+                            accent: '#F97316',    // Vibrant Orange
+                            purple: '#8B5CF6',    // STEAM Purple
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar & Animasi Halus */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .glass-header {
+            background: linear-gradient(135deg, #0B1120 0%, #162447 60%, #0E3A5D 100%);
+        }
+
+        .status-btn {
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .status-btn:active {
+            transform: scale(0.94);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        .animate-pulse-dot {
+            animation: pulse-dot 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- ===================================================================== -->
+    <!-- HEADER / NAVBAR XPERT ACADEMY                                         -->
+    <!-- ===================================================================== -->
+    <header class="glass-header text-white shadow-lg sticky top-0 z-30 border-b border-cyan-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                
+                <!-- Logo & Brand Identity -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 p-0.5 shadow-md shadow-cyan-500/20">
+                            <div class="w-full h-full bg-xpert-dark rounded-[10px] flex items-center justify-center">
+                                <i class="fa-solid fa-robot text-cyan-400 text-xl"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-cyan-300 bg-clip-text text-transparent">
+                                    XPERT ACADEMY
+                                </h1>
+                                <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full">
+                                    Attendance v2.0
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-300 font-medium">Coding • Robotics • STEAM Education</p>
+                        </div>
+                    </div>
+
+                    <!-- Connection Status Badge (Mobile) -->
+                    <div id="connectionBadgeMobile" class="md:hidden"></div>
+                </div>
+
+                <!-- Action Buttons & Connection Status -->
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <!-- Status Koneksi Google Sheet -->
+                    <div id="connectionBadgeDesktop" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800/80 border border-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse-dot"></span>
+                        <span class="text-slate-300">Memeriksa Koneksi...</span>
+                    </div>
+
+                    <!-- Tombol Custom 15 Program Ajar -->
+                    <button onclick="openProgramModal()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/40 transition shadow-sm">
+                        <i class="fa-solid fa-sliders text-purple-400"></i>
+                        <span>Custom 15 Program</span>
+                    </button>
+
+                    <!-- Tombol Panduan Setup Google Sheet & GitHub -->
+                    <button onclick="openSetupModal()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 transition shadow-sm">
+                        <i class="fa-solid fa-code text-cyan-400"></i>
+                        <span>Setup G-Sheet & GitHub</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN CONTENT CONTAINER                                                -->
+    <!-- ===================================================================== -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Banner Info Mode Demo (Muncul jika URL Google Sheet belum diisi) -->
+        <div id="demoBanner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-amber-900">Mode Simulasi / Offline Aktif</h3>
+                        <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                            URL Web App Google Apps Script belum dikonfigurasi pada baris kode (<code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-900">GOOGLE_SHEET_API_URL</code>). Aplikasi saat ini menggunakan <strong>data dummy siswa Xpert Academy</strong>. Klik tombol panduan untuk menghubungkan ke Google Sheets Anda.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="openSetupModal()" class="self-start sm:self-center whitespace-nowrap px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                    Lihat Cara Setup
+                </button>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- KARTU PARAMETER SESI KELAS & PROGRAM AJAR                         -->
+        <!-- ================================================================= -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">Detail Sesi Kelas & Program Ajar</h2>
+                        <p class="text-xs text-slate-500">Pilih tanggal, mentor, dan salah satu dari 15 program ajar Xpert Academy</p>
+                    </div>
+                </div>
+                <button onclick="fetchStudentsFromSheet()" id="btnRefreshStudents" class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    <i class="fa-solid fa-rotate" id="refreshIcon"></i>
+                    <span>Ambil Data Siswa (G-Sheet)</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Tanggal Presensi (Otomatis Mengikuti Waktu Akses Web App) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="attendanceDate" class="block text-xs font-semibold text-slate-600">
+                            <i class="fa-regular fa-calendar text-blue-500 mr-1"></i> Tanggal Presensi
+                        </label>
+                        <button type="button" onclick="syncCurrentDateTime(true)" title="Sinkronkan ulang dengan waktu perangkat sekarang" class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1">
+                            <i class="fa-solid fa-clock-rotate-left text-[10px]"></i> Hari Ini
+                        </button>
+                    </div>
+                    <input type="date" id="attendanceDate" onchange="markDateAsManual()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition">
+                    <p id="liveAccessClock" class="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 font-mono">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Memuat waktu lokal...</span>
+                    </p>
+                </div>
+
+                <!-- Nama Pengajar / Mentor -->
+                <div>
+                    <label for="mentorName" class="block text-xs font-semibold text-slate-600 mb-1.5">
+                        <i class="fa-solid fa-user-tie text-purple-500 mr-1"></i> Nama Pengajar / Mentor
+                    </label>
+                    <input type="text" id="mentorName" placeholder="Contoh: Kak Bima / Coach Rina" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition">
+                </div>
+
+                <!-- Pilihan 15 Program Ajar Custom -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="programSelect" class="block text-xs font-semibold text-slate-600">
+                            <i class="fa-solid fa-microchip text-cyan-600 mr-1"></i> Program Ajar (15 Slot)
+                        </label>
+                        <button type="button" onclick="openProgramModal()" class="text-[11px] font-semibold text-purple-600 hover:text-purple-700 hover:underline">
+                            Edit Program
+                        </button>
+                    </div>
+                    <select id="programSelect" onchange="handleProgramChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </select>
+                </div>
+
+                <!-- Materi Ajar Hari Ini -->
+                <div>
+                    <label for="teachingMaterial" class="block text-xs font-semibold text-slate-600 mb-1.5">
+                        <i class="fa-solid fa-book-open text-orange-500 mr-1"></i> Materi Ajar
+                    </label>
+                    <input type="text" id="teachingMaterial" placeholder="Contoh: Modul 3 - Looping & Sensor" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition">
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- STATISTIK REAL-TIME KEHADIRAN                                     -->
+        <!-- ================================================================= -->
+        <section class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+            <!-- Total Siswa -->
+            <div class="col-span-2 sm:col-span-1 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</p>
+                    <p id="statTotal" class="text-2xl font-extrabold text-slate-800 mt-1">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <!-- Hadir -->
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Hadir (H)</p>
+                    <p id="statHadir" class="text-2xl font-extrabold text-emerald-700 mt-1">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+
+            <!-- Izin -->
+            <div class="bg-white rounded-2xl p-4 border border-blue-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Izin (I)</p>
+                    <p id="statIzin" class="text-2xl font-extrabold text-blue-700 mt-1">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-envelope-open-text"></i>
+                </div>
+            </div>
+
+            <!-- Sakit -->
+            <div class="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Sakit (S)</p>
+                    <p id="statSakit" class="text-2xl font-extrabold text-amber-700 mt-1">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-kit-medical"></i>
+                </div>
+            </div>
+
+            <!-- Alpha -->
+            <div class="bg-white rounded-2xl p-4 border border-rose-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Alpha (A)</p>
+                    <p id="statAlpha" class="text-2xl font-extrabold text-rose-700 mt-1">0</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- DAFTAR PRESENSI SISWA & FILTER                                    -->
+        <!-- ================================================================= -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <!-- Toolbar Pencarian, Filter & Aksi Cepat -->
+            <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-grow">
+                    <!-- Pencarian Nama / ID Siswa -->
+                    <div class="relative flex-grow max-w-md">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="renderStudentList()" placeholder="Cari nama siswa atau ID..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+                    </div>
+
+                    <!-- Checkbox Filter Berdasarkan Program Terpilih -->
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-white px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        <input type="checkbox" id="filterByProgram" onchange="renderStudentList()" class="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500" checked>
+                        <span>Hanya siswa program terpilih</span>
+                    </label>
+                </div>
+
+                <!-- Tombol Aksi Cepat -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="markAllStatus('Hadir')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Tandai Semua Hadir</span>
+                    </button>
+                    <button type="button" onclick="resetAllStatus()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 transition inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-eraser"></i>
+                        <span>Reset</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabel Desktop & Card List Mobile -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            <th class="py-3.5 px-4 w-12 text-center">No</th>
+                            <th class="py-3.5 px-4">Siswa & Program Terdaftar</th>
+                            <th class="py-3.5 px-4 text-center">Status Kehadiran</th>
+                            <th class="py-3.5 px-4">Catatan / Progress Modul Hari Ini</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Diisi secara dinamis melalui JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State jika pencarian tidak ditemukan -->
+            <div id="emptyState" class="hidden py-12 px-4 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fa-solid fa-user-slash"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-700">Tidak ada siswa yang sesuai filter</h3>
+                <p class="text-xs text-slate-500 mt-1">Coba hapus kata kunci pencarian atau matikan filter program terpilih.</p>
+            </div>
+
+            <!-- Footer Bar Simpan Presensi -->
+            <div class="p-4 sm:p-5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="text-xs text-slate-300">
+                    <span class="font-semibold text-white" id="selectedCountInfo">0 siswa</span> siap direkap untuk program <span class="font-bold text-cyan-400" id="footerProgramLabel">-</span>
+                </div>
+                <button type="button" id="btnSubmitAttendance" onclick="submitAttendanceToSheet()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition transform active:scale-[0.98]">
+                    <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                    <span>Simpan Presensi ke Google Sheet</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- FOOTER                                                                -->
+    <!-- ===================================================================== -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <p>&copy; <span id="currentYear"></span> <strong>Xpert Academy</strong> — Coding, Robotics & STEAM Education Center.</p>
+            <p class="font-mono text-[11px] text-slate-400">Powered by GitHub Pages & Google Apps Script</p>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: CUSTOM 15 PROGRAM AJAR XPERT ACADEMY                         -->
+    <!-- ===================================================================== -->
+    <div id="programModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-gradient-to-r from-xpert-dark to-slate-800 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold">Custom 15 Program Ajar Xpert Academy</h3>
+                        <p class="text-xs text-slate-300">Ubah nama dan kategori (Coding, Robotics, STEAM) sesuai kurikulum Anda</p>
+                    </div>
+                </div>
+                <button onclick="closeProgramModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-200 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Daftar 15 Input Program) -->
+            <div class="p-6 overflow-y-auto space-y-3 flex-grow bg-slate-50" id="programEditorList">
+                <!-- Diisi otomatis via JavaScript -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <button type="button" onclick="resetProgramsToDefault()" class="px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition inline-flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset ke 15 Program Default</span>
+                </button>
+                <div class="flex items-center gap-2 justify-end">
+                    <button type="button" onclick="closeProgramModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+                        Batal
+                    </button>
+                    <button type="button" onclick="saveCustomPrograms()" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-500/20 transition inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Simpan Perubahan</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 2: PANDUAN SETUP GOOGLE SHEETS & GITHUB PAGES                   -->
+    <!-- ===================================================================== -->
+    <div id="setupModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-gradient-to-r from-xpert-dark to-cyan-950 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold">Panduan Integrasi Google Sheets & GitHub Pages</h3>
+                        <p class="text-xs text-cyan-200/80">Ikuti 3 langkah mudah untuk menghubungkan database siswa dan rekap presensi</p>
+                    </div>
+                </div>
+                <button onclick="closeSetupModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-200 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-700 leading-relaxed">
+                
+                <!-- Langkah 1 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-cyan-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+                        Siapkan Struktur Google Sheets
+                    </h4>
+                    <p class="text-xs text-slate-600 mt-1.5">Buat file Google Spreadsheet baru, lalu buat <strong>2 Tab Sheet</strong> di bagian bawah dengan nama persis seperti berikut:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <p class="text-xs font-bold text-blue-700">Tab 1: <code class="bg-blue-50 px-1.5 py-0.5 rounded">DataSiswa</code></p>
+                            <p class="text-[11px] text-slate-500 mt-1">Isi header baris ke-1 (Kolom A sampai D):</p>
+                            <code class="block mt-1 text-[11px] bg-slate-100 p-1.5 rounded font-mono text-slate-800">ID_Siswa | Nama_Siswa | Program | Kelas</code>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <p class="text-xs font-bold text-emerald-700">Tab 2: <code class="bg-emerald-50 px-1.5 py-0.5 rounded">RekapPresensi</code></p>
+                            <p class="text-[11px] text-slate-500 mt-1">Header otomatis dibuat oleh skrip, atau isi baris ke-1:</p>
+                            <code class="block mt-1 text-[11px] bg-slate-100 p-1.5 rounded font-mono text-slate-800">Timestamp | Tanggal | Materi_Ajar | Mentor | Program | ID_Siswa | Nama_Siswa | Status | Catatan</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Langkah 2 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-cyan-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+                            Salin Kode Google Apps Script
+                        </h4>
+                        <button type="button" onclick="copyAppsScriptCode()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white transition">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copyBtnText">Salin Kode Script</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-600 mt-1.5">
+                        Di Google Sheets, klik menu <strong>Ekstensi (Extensions) &rarr; Apps Script</strong>. Hapus kode lama, tempel kode di bawah ini, lalu klik <strong>Deploy &rarr; New deployment &rarr; Web app</strong> (Set <em>Execute as: Me</em> dan <em>Who has access: Anyone</em>).
+                    </p>
+                    <pre id="appsScriptCodeBlock" class="mt-3 p-3.5 bg-slate-900 text-cyan-300 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed">function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("DataSiswa");
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Sheet DataSiswa tidak ditemukan" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  var data = sheet.getDataRange().getValues();
+  var students = [];
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][1]) {
+      students.push({
+        id: String(data[i][0] || "XP-" + i),
+        name: String(data[i][1]),
+        program: String(data[i][2] || ""),
+        level: String(data[i][3] || "Reguler")
+      });
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ status: "success", students: students }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("RekapPresensi");
+    if (!sheet) {
+      sheet = ss.insertSheet("RekapPresensi");
+      sheet.appendRow(["Timestamp", "Tanggal", "Materi_Ajar", "Mentor", "Program", "ID_Siswa", "Nama_Siswa", "Status", "Catatan"]);
+    }
+    var payload = JSON.parse(e.postData.contents);
+    var timestamp = new Date();
+    var records = payload.records || [];
+    
+    records.forEach(function(item) {
+      sheet.appendRow([
+        timestamp,
+        payload.date,
+        payload.materiAjar,
+        payload.mentor,
+        payload.program,
+        item.id,
+        item.name,
+        item.status,
+        item.note || "-"
+      ]);
+    });
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: records.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                </div>
+
+                <!-- Langkah 3 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-cyan-600 text-white text-xs flex items-center justify-center font-bold">3</span>
+                        Tempel URL ke Kode & Upload ke GitHub Pages
+                    </h4>
+                    <ol class="list-decimal list-inside text-xs text-slate-600 mt-1.5 space-y-1">
+                        <li>Salin <strong>Web App URL</strong> (berakhiran <code class="bg-slate-200 px-1 rounded">/exec</code>) dari hasil Deploy Apps Script.</li>
+                        <li>Buka file <code class="bg-slate-200 px-1 rounded">index.html</code> ini, temukan konstanta <code class="bg-slate-200 px-1 rounded font-mono text-blue-700">GOOGLE_SHEET_API_URL</code> di bagian paling atas tag <code class="bg-slate-200 px-1 rounded">&lt;script&gt;</code>, lalu ganti teks di dalamnya dengan URL Anda.</li>
+                        <li>Upload <code class="bg-slate-200 px-1 rounded">index.html</code> ke repository GitHub Anda, lalu aktifkan <strong>Settings &rarr; Pages &rarr; Deploy from branch (main)</strong>.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button type="button" onclick="closeSetupModal()" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition">
+                    Mengerti & Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TOAST NOTIFICATION CONTAINER (PENGGANTI ALERT)                        -->
+    <!-- ===================================================================== -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT APPLICATION LOGIC                                          -->
+    <!-- ===================================================================== -->
+    <script>
+        // =========================================================================
+        // [PENTING!] KONFIGURASI URL GOOGLE APPS SCRIPT WEB APP
+        // Ganti nilai di bawah ini dengan Web App URL dari Google Apps Script Anda
+        // Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
+        // =========================================================================
+        const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyu_xz07oqemN4JLsreA2vAWot8cUiW3Qva1YDUfI2fnUauHufS1tKzSRmVTIuEh0o5Dw/exec";
+        // =========================================================================
+
+        // Key untuk penyimpanan lokal (localStorage)
+        const STORAGE_KEY_PROGRAMS = "xpert_academy_custom_programs_v1";
+        const STORAGE_KEY_MENTOR   = "xpert_academy_last_mentor_v1";
+
+        // 15 Daftar Program Ajar Default Xpert Academy (Coding, Robotics, STEAM)
+        const DEFAULT_PROGRAMS = [
+            { id: 1,  name: "Coding Grade 1 & 2", category: "Coding" },
+            { id: 2,  name: "Coding Grade 3", category: "Coding" },
+            { id: 3,  name: "Coding Grade 4", category: "Coding" },
+            { id: 4,  name: "Coding Grade 5", category: "Coding" },
+            { id: 5,  name: "Coding Grade 6", category: "Coding" },
+            { id: 6,  name: "Robotics Grade 1", category: "Robotics" },
+            { id: 7,  name: "Robotics Grade 2", category: "Robotics" },
+            { id: 8,  name: "Robotics Grade 2 & 3", category: "Robotics" },
+            { id: 9,  name: "Robotics Grade 4 & 5", category: "Robotics" },
+            { id: 10, name: "STEAM Grade 1", category: "STEAM" },
+            { id: 11, name: "STEAM Grade 2", category: "STEAM" },
+            { id: 12, name: "STEAM Grade 3", category: "STEAM" },
+            { id: 13, name: "STEAM Grade 4", category: "STEAM" },
+            { id: 14, name: "STEAM Grade 5", category: "STEAM" },
+            { id: 15, name: "STEAM Grade 6", category: "STEAM" }
+        ];
+
+        // Data Dummy Siswa Xpert Academy (Digunakan otomatis saat Mode Demo / Offline)
+        const DUMMY_STUDENTS = [
+            { id: "XA-2026-001", name: "Atharizz Kenzie Pratama", program: "Scratch 3.0 Game & Animation", level: "Level 2" },
+            { id: "XA-2026-002", name: "Clarissa Putri Wijaya", program: "Python Basic & Logic", level: "Level 1" },
+            { id: "XA-2026-003", name: "Muhammad Rayyan Alfarizi", program: "LEGO Education SPIKE Prime", level: "Intermediate" },
+            { id: "XA-2026-004", name: "Giselle Audrey Tan", program: "Web Dev (HTML, CSS & JS)", level: "Level 1" },
+            { id: "XA-2026-005", name: "Damian Nicholas Siahaan", program: "Roblox Studio & Lua Scripting", level: "Level 2" },
+            { id: "XA-2026-006", name: "Nayla Azzahra Lubis", program: "Arduino Basic & Microcontroller", level: "Beginner" },
+            { id: "XA-2026-007", name: "Kevin Jonathan Halim", program: "Micro:bit & Smart IoT", level: "Intermediate" },
+            { id: "XA-2026-008", name: "Felicia Grace Nainggolan", program: "3D Printing & Tinkercad Design", level: "STEAM Kids" },
+            { id: "XA-2026-009", name: "Rafaiz Zidan Nasution", program: "AI & Machine Learning for Kids", level: "Junior" },
+            { id: "XA-2026-010", name: "Keiko Mikayla Gunawan", program: "Scratch Jr (Creative Coding)", level: "Explorer" },
+            { id: "XA-2026-011", name: "Bima Sakti Nugroho", program: "VEX Robotics Engineering", level: "Competition" },
+            { id: "XA-2026-012", name: "Salsabila Khairunnisa", program: "Mobile App (MIT App Inventor)", level: "Level 1" }
+        ];
+
+        // State Utama Aplikasi
+        let programsList = [];
+        let studentsList = [];
+        let attendanceState = {}; // Format: { "XA-2026-001": { status: "Hadir", note: "" } }
+        let isDemoMode = true;
+        let isManualDateOverride = false;
+        let lastAutoDateStr = "";
+
+        // =========================================================================
+        // MANAJEMEN TANGGAL & WAKTU LOKAL REAL-TIME SAAT WEB APP DIAKSES
+        // =========================================================================
+        function getLocalDateString(dateObj = new Date()) {
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const dd = String(dateObj.getDate()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function formatLiveClockLabel(dateObj = new Date()) {
+            const hariIndo = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+            const bulanIndo = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            const hari = hariIndo[dateObj.getDay()];
+            const tgl = String(dateObj.getDate()).padStart(2, "0");
+            const bln = bulanIndo[dateObj.getMonth()];
+            const thn = dateObj.getFullYear();
+            const jam = String(dateObj.getHours()).padStart(2, "0");
+            const mnt = String(dateObj.getMinutes()).padStart(2, "0");
+            const dtk = String(dateObj.getSeconds()).padStart(2, "0");
+            return `${hari}, ${tgl} ${bln} ${thn} • ${jam}:${mnt}:${dtk}`;
+        }
+
+        function syncCurrentDateTime(forceReset = false) {
+            const now = new Date();
+            const currentDateStr = getLocalDateString(now);
+            const dateInput = document.getElementById("attendanceDate");
+            const clockEl = document.getElementById("liveAccessClock");
+
+            if (forceReset) {
+                isManualDateOverride = false;
+                dateInput.value = currentDateStr;
+                lastAutoDateStr = currentDateStr;
+                showToast("Tanggal disinkronkan ke waktu perangkat saat ini.", "info");
+            } else if (!isManualDateOverride && currentDateStr !== lastAutoDateStr) {
+                // Otomatis perbarui tanggal saat pertama diakses atau ketika melewati tengah malam (00:00)
+                dateInput.value = currentDateStr;
+                lastAutoDateStr = currentDateStr;
+            }
+
+            if (clockEl) {
+                clockEl.innerHTML = `
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>${formatLiveClockLabel(now)}</span>
+                `;
+            }
+        }
+
+        function markDateAsManual() {
+            const currentToday = getLocalDateString(new Date());
+            const selectedVal = document.getElementById("attendanceDate").value;
+            isManualDateOverride = (selectedVal !== currentToday);
+        }
+
+        // =========================================================================
+        // INISIALISASI SAAT HALAMAN DIMUAT
+        // =========================================================================
+        window.addEventListener("DOMContentLoaded", () => {
+            // Set tahun di footer
+            document.getElementById("currentYear").textContent = new Date().getFullYear();
+
+            // Set & jalankan sinkronisasi tanggal + jam lokal real-time saat web app diakses
+            syncCurrentDateTime(false);
+            setInterval(() => syncCurrentDateTime(false), 1000);
+
+            // Muat nama mentor terakhir dari localStorage jika ada
+            const savedMentor = localStorage.getItem(STORAGE_KEY_MENTOR);
+            if (savedMentor) {
+                document.getElementById("mentorName").value = savedMentor;
+            }
+            document.getElementById("mentorName").addEventListener("input", (e) => {
+                localStorage.setItem(STORAGE_KEY_MENTOR, e.target.value);
+            });
+
+            // Muat 15 Program Ajar (dari localStorage atau default)
+            loadPrograms();
+
+            // Cek apakah URL Google Sheet sudah diisi & ambil data siswa
+            fetchStudentsFromSheet();
+        });
+
+        // =========================================================================
+        // MANAJEMEN 15 PROGRAM AJAR CUSTOM
+        // =========================================================================
+        function loadPrograms() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY_PROGRAMS);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length === 15) {
+                        programsList = parsed;
+                    } else {
+                        programsList = JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+                    }
+                } else {
+                    programsList = JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+                }
+            } catch (error) {
+                console.error("Gagal membaca program dari localStorage:", error);
+                programsList = JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+            }
+            renderProgramDropdown();
+        }
+
+        function renderProgramDropdown() {
+            const select = document.getElementById("programSelect");
+            const currentVal = select.value;
+            select.innerHTML = "";
+
+            // Kelompokkan berdasarkan kategori (Coding, Robotics, STEAM) agar rapi
+            const categories = ["Coding", "Robotics", "STEAM"];
+            categories.forEach(cat => {
+                const group = document.createElement("optgroup");
+                group.label = `── Kategori: ${cat.toUpperCase()} ──`;
+                
+                programsList
+                    .filter(p => p.category === cat)
+                    .forEach(prog => {
+                        const opt = document.createElement("option");
+                        opt.value = prog.name;
+                        opt.textContent = `[${prog.category}] ${prog.name}`;
+                        group.appendChild(opt);
+                    });
+
+                if (group.children.length > 0) {
+                    select.appendChild(group);
+                }
+            });
+
+            // Kembalikan pilihan sebelumnya jika masih ada
+            if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+                select.value = currentVal;
+            }
+            handleProgramChange();
+        }
+
+        function handleProgramChange() {
+            const selectedProg = document.getElementById("programSelect").value;
+            document.getElementById("footerProgramLabel").textContent = selectedProg || "-";
+            renderStudentList();
+        }
+
+        function openProgramModal() {
+            const container = document.getElementById("programEditorList");
+            container.innerHTML = "";
+
+            programsList.forEach((prog, idx) => {
+                const row = document.createElement("div");
+                row.className = "bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2.5 shadow-sm";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5 flex-grow">
+                        <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            ${idx + 1}
+                        </span>
+                        <input type="text" id="progName_${idx}" value="${escapeHtml(prog.name)}" placeholder="Nama Program Ajar..."
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white">
+                    </div>
+                    <div class="sm:w-40 flex-shrink-0">
+                        <select id="progCat_${idx}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="Coding" ${prog.category === "Coding" ? "selected" : ""}>💻 Coding</option>
+                            <option value="Robotics" ${prog.category === "Robotics" ? "selected" : ""}>🤖 Robotics</option>
+                            <option value="STEAM" ${prog.category === "STEAM" ? "selected" : ""}>🔬 STEAM</option>
+                        </select>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            document.getElementById("programModal").classList.remove("hidden");
+        }
+
+        function closeProgramModal() {
+            document.getElementById("programModal").classList.add("hidden");
+        }
+
+        function saveCustomPrograms() {
+            const updated = [];
+            for (let i = 0; i < 15; i++) {
+                const nameInput = document.getElementById(`progName_${i}`).value.trim();
+                const catInput = document.getElementById(`progCat_${i}`).value;
+                updated.push({
+                    id: i + 1,
+                    name: nameInput || `Program Xpert #${i + 1}`,
+                    category: catInput
+                });
+            }
+            programsList = updated;
+            localStorage.setItem(STORAGE_KEY_PROGRAMS, JSON.stringify(programsList));
+            renderProgramDropdown();
+            closeProgramModal();
+            showToast("15 Program Ajar berhasil diperbarui & disimpan!", "success");
+        }
+
+        function resetProgramsToDefault() {
+            programsList = JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+            localStorage.setItem(STORAGE_KEY_PROGRAMS, JSON.stringify(programsList));
+            openProgramModal(); // Refresh tampilan modal
+            renderProgramDropdown();
+            showToast("Daftar program dikembalikan ke pengaturan default Xpert Academy.", "info");
+        }
+
+        // =========================================================================
+        // INTEGRASI GOOGLE SHEETS (AMBIL DATA SISWA & SIMPAN PRESENSI)
+        // =========================================================================
+        function isGoogleSheetConfigured() {
+            return (
+                typeof GOOGLE_SHEET_API_URL === "string" &&
+                GOOGLE_SHEET_API_URL.trim() !== "" &&
+                GOOGLE_SHEET_API_URL !== "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_ANDA_DI_SINI" &&
+                GOOGLE_SHEET_API_URL.startsWith("https://")
+            );
+        }
+
+        function updateConnectionUI(connected, customText = "") {
+            const desktopBadge = document.getElementById("connectionBadgeDesktop");
+            const mobileBadge = document.getElementById("connectionBadgeMobile");
+            const demoBanner = document.getElementById("demoBanner");
+
+            if (connected) {
+                isDemoMode = false;
+                demoBanner.classList.add("hidden");
+                desktopBadge.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+                    <span class="text-emerald-300 font-semibold">${customText || "Terhubung ke Google Sheet"}</span>
+                `;
+                mobileBadge.innerHTML = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> G-Sheet Online
+                    </span>
+                `;
+            } else {
+                isDemoMode = true;
+                demoBanner.classList.remove("hidden");
+                desktopBadge.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span class="text-amber-300 font-semibold">${customText || "Mode Demo / Offline"}</span>
+                `;
+                mobileBadge.innerHTML = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Demo
+                    </span>
+                `;
+            }
+        }
+
+        async function fetchStudentsFromSheet() {
+            const refreshIcon = document.getElementById("refreshIcon");
+            refreshIcon.classList.add("fa-spin");
+
+            if (!isGoogleSheetConfigured()) {
+                // Gunakan data dummy jika URL belum diisi
+                setTimeout(() => {
+                    studentsList = [...DUMMY_STUDENTS];
+                    initializeAttendanceState();
+                    updateConnectionUI(false, "Mode Demo / Offline");
+                    renderStudentList();
+                    refreshIcon.classList.remove("fa-spin");
+                }, 350);
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SHEET_API_URL, {
+                    method: "GET",
+                    redirect: "follow"
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.status === "success" && Array.isArray(result.students)) {
+                    studentsList = result.students;
+                    initializeAttendanceState();
+                    updateConnectionUI(true, `Terhubung (${studentsList.length} Siswa)`);
+                    renderStudentList();
+                    showToast(`Berhasil memuat ${studentsList.length} data siswa dari Google Sheet.`, "success");
+                } else {
+                    throw new Error(result.message || "Format respons Google Sheet tidak valid.");
+                }
+            } catch (error) {
+                console.error("Gagal mengambil data dari Google Sheet:", error);
+                studentsList = [...DUMMY_STUDENTS];
+                initializeAttendanceState();
+                updateConnectionUI(false, "Gagal Konek (Fallback Demo)");
+                renderStudentList();
+                showToast("Gagal terhubung ke Google Sheet. Menggunakan data simulasi.", "warning");
+            } finally {
+                refreshIcon.classList.remove("fa-spin");
+            }
+        }
+
+        function initializeAttendanceState() {
+            studentsList.forEach(student => {
+                if (!attendanceState[student.id]) {
+                    attendanceState[student.id] = {
+                        status: "Hadir", // Default Hadir agar mentor lebih cepat mengabsen
+                        note: ""
+                    };
+                }
+            });
+        }
+
+        // =========================================================================
+        // RENDER DAFTAR SISWA & INTERAKSI STATUS PRESENSI
+        // =========================================================================
+        function getFilteredStudents() {
+            const query = document.getElementById("searchInput").value.toLowerCase().trim();
+            const onlySelectedProgram = document.getElementById("filterByProgram").checked;
+            const selectedProgram = document.getElementById("programSelect").value;
+
+            return studentsList.filter(student => {
+                const matchesSearch =
+                    student.name.toLowerCase().includes(query) ||
+                    student.id.toLowerCase().includes(query) ||
+                    (student.program && student.program.toLowerCase().includes(query));
+
+                const matchesProgram = !onlySelectedProgram || (student.program === selectedProgram);
+
+                return matchesSearch && matchesProgram;
+            });
+        }
+
+        function renderStudentList() {
+            const tbody = document.getElementById("studentTableBody");
+            const emptyState = document.getElementById("emptyState");
+            const filtered = getFilteredStudents();
+
+            tbody.innerHTML = "";
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove("hidden");
+            } else {
+                emptyState.classList.add("hidden");
+            }
+
+            filtered.forEach((student, index) => {
+                const state = attendanceState[student.id] || { status: "Hadir", note: "" };
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50/90 transition";
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 text-center font-mono text-xs text-slate-400 font-semibold">
+                        ${index + 1}
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-bold text-slate-800 text-sm">${escapeHtml(student.name)}</div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                ${escapeHtml(student.id)}
+                            </span>
+                            ${student.program ? `
+                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-medium border border-cyan-100">
+                                    ${escapeHtml(student.program)}
+                                </span>
+                            ` : ""}
+                            ${student.level ? `
+                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
+                                    ${escapeHtml(student.level)}
+                                </span>
+                            ` : ""}
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center justify-center gap-1.5">
+                            ${renderStatusButton(student.id, "Hadir", "H", state.status, "emerald")}
+                            ${renderStatusButton(student.id, "Izin",  "I", state.status, "blue")}
+                            ${renderStatusButton(student.id, "Sakit", "S", state.status, "amber")}
+                            ${renderStatusButton(student.id, "Alpha", "A", state.status, "rose")}
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4 min-w-[220px]">
+                        <input type="text"
+                            value="${escapeHtml(state.note)}"
+                            oninput="updateStudentNote('${escapeHtml(student.id)}', this.value)"
+                            placeholder="Catatan progress / modul..."
+                            class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateStatistics(filtered);
+        }
+
+        function renderStatusButton(studentId, statusValue, shortLabel, currentStatus, color) {
+            const isSelected = currentStatus === statusValue;
+            const colorMap = {
+                emerald: isSelected
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-500/30"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600",
+                blue: isSelected
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/30"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
+                amber: isSelected
+                    ? "bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/30"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-amber-300 hover:text-amber-600",
+                rose: isSelected
+                    ? "bg-rose-600 text-white border-rose-600 shadow-sm shadow-rose-500/30"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-rose-300 hover:text-rose-600"
+            };
+
+            return `
+                <button type="button"
+                    onclick="setStudentStatus('${escapeHtml(studentId)}', '${statusValue}')"
+                    title="${statusValue}"
+                    class="status-btn w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1 ${colorMap[color]}">
+                    <span>${shortLabel}</span>
+                    <span class="hidden xl:inline font-medium text-[11px]">${statusValue}</span>
+                </button>
+            `;
+        }
+
+        function setStudentStatus(studentId, status) {
+            if (!attendanceState[studentId]) {
+                attendanceState[studentId] = { status: status, note: "" };
+            } else {
+                attendanceState[studentId].status = status;
+            }
+            renderStudentList();
+        }
+
+        function updateStudentNote(studentId, noteText) {
+            if (!attendanceState[studentId]) {
+                attendanceState[studentId] = { status: "Hadir", note: noteText };
+            } else {
+                attendanceState[studentId].note = noteText;
+            }
+        }
+
+        function markAllStatus(status) {
+            const filtered = getFilteredStudents();
+            filtered.forEach(student => {
+                if (!attendanceState[student.id]) {
+                    attendanceState[student.id] = { status: status, note: "" };
+                } else {
+                    attendanceState[student.id].status = status;
+                }
+            });
+            renderStudentList();
+            showToast(`Semua (${filtered.length}) siswa ditampilkan ditandai: ${status}`, "info");
+        }
+
+        function resetAllStatus() {
+            const filtered = getFilteredStudents();
+            filtered.forEach(student => {
+                attendanceState[student.id] = { status: "Hadir", note: "" };
+            });
+            renderStudentList();
+            showToast("Status dan catatan siswa telah direset.", "info");
+        }
+
+        function updateStatistics(filteredStudents) {
+            let total = filteredStudents.length;
+            let hadir = 0, izin = 0, sakit = 0, alpha = 0;
+
+            filteredStudents.forEach(s => {
+                const st = (attendanceState[s.id] && attendanceState[s.id].status) || "Hadir";
+                if (st === "Hadir") hadir++;
+                else if (st === "Izin") izin++;
+                else if (st === "Sakit") sakit++;
+                else if (st === "Alpha") alpha++;
+            });
+
+            document.getElementById("statTotal").textContent = total;
+            document.getElementById("statHadir").textContent = hadir;
+            document.getElementById("statIzin").textContent = izin;
+            document.getElementById("statSakit").textContent = sakit;
+            document.getElementById("statAlpha").textContent = alpha;
+            document.getElementById("selectedCountInfo").textContent = `${total} siswa`;
+        }
+
+        // =========================================================================
+        // KIRIM / SIMPAN PRESENSI KE GOOGLE SHEETS
+        // =========================================================================
+        async function submitAttendanceToSheet() {
+            const date = document.getElementById("attendanceDate").value;
+            const mentor = document.getElementById("mentorName").value.trim();
+            const program = document.getElementById("programSelect").value;
+            const materiAjar = document.getElementById("teachingMaterial").value.trim();
+            const filteredStudents = getFilteredStudents();
+
+            // Validasi Form
+            if (!date) {
+                showToast("Harap pilih tanggal presensi terlebih dahulu!", "error");
+                return;
+            }
+            if (!mentor) {
+                showToast("Harap isi Nama Pengajar / Mentor terlebih dahulu!", "error");
+                document.getElementById("mentorName").focus();
+                return;
+            }
+            if (!materiAjar) {
+                showToast("Harap isi Materi Ajar hari ini terlebih dahulu!", "error");
+                document.getElementById("teachingMaterial").focus();
+                return;
+            }
+            if (filteredStudents.length === 0) {
+                showToast("Tidak ada daftar siswa untuk disimpan.", "error");
+                return;
+            }
+
+            // Susun Payload JSON untuk dikirim ke Google Apps Script
+            const payload = {
+                date: date,
+                materiAjar: materiAjar,
+                mentor: mentor,
+                program: program,
+                records: filteredStudents.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    status: (attendanceState[s.id] && attendanceState[s.id].status) || "Hadir",
+                    note: (attendanceState[s.id] && attendanceState[s.id].note) || "-"
+                }))
+            };
+
+            const btn = document.getElementById("btnSubmitAttendance");
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menyimpan Presensi...</span>`;
+
+            // Jika masih Mode Demo (URL belum dikonfigurasi)
+            if (!isGoogleSheetConfigured()) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    console.log("Simulasi Payload Presensi Xpert Academy:", payload);
+                    showToast(`[Mode Simulasi] Presensi ${payload.records.length} siswa untuk "${program}" berhasil dicatat!`, "success");
+                }, 700);
+                return;
+            }
+
+            // Kirim POST Request ke Google Apps Script Web App
+            try {
+                const response = await fetch(GOOGLE_SHEET_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8" // Menghindari preflight CORS pada Google Apps Script
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.status === "success") {
+                    showToast(`Sukses! ${result.count || payload.records.length} data presensi tersimpan di Google Sheet.`, "success");
+                } else {
+                    throw new Error(result.message || "Terjadi kesalahan pada server Apps Script.");
+                }
+            } catch (error) {
+                console.error("Error saat mengirim presensi:", error);
+                showToast(`Gagal menyimpan ke Google Sheet: ${error.message}`, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // =========================================================================
+        // MODAL SETUP & UTILITAS HELPER
+        // =========================================================================
+        function openSetupModal() {
+            document.getElementById("setupModal").classList.remove("hidden");
+        }
+
+        function closeSetupModal() {
+            document.getElementById("setupModal").classList.add("hidden");
+        }
+
+        function copyAppsScriptCode() {
+            const codeText = document.getElementById("appsScriptCodeBlock").innerText;
+            const textarea = document.createElement("textarea");
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand("copy");
+                const btnText = document.getElementById("copyBtnText");
+                btnText.textContent = "Tersalin!";
+                showToast("Kode Google Apps Script berhasil disalin ke clipboard!", "success");
+                setTimeout(() => {
+                    btnText.textContent = "Salin Kode Script";
+                }, 2500);
+            } catch (err) {
+                showToast("Gagal menyalin kode otomatis, silakan blok dan salin manual.", "error");
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            
+            const styles = {
+                success: "bg-emerald-900 text-emerald-50 border-emerald-500/40",
+                error:   "bg-rose-900 text-rose-50 border-rose-500/40",
+                warning: "bg-amber-900 text-amber-50 border-amber-500/40",
+                info:    "bg-slate-900 text-slate-50 border-cyan-500/40"
+            };
+            const icons = {
+                success: "fa-circle-check text-emerald-400",
+                error:   "fa-circle-exclamation text-rose-400",
+                warning: "fa-triangle-exclamation text-amber-400",
+                info:    "fa-circle-info text-cyan-400"
+            };
+
+            toast.className = `pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.info} text-base mt-0.5"></i>
+                <div class="flex-grow leading-relaxed">${escapeHtml(message)}</div>
+            `;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove("translate-y-2", "opacity-0");
+            });
+
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
